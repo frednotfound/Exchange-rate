@@ -129,7 +129,16 @@ async function updateMid() {
     date = new Date(e.time_last_update_unix * 1000).toISOString().slice(0, 10);
     rates = trim(r); source = 'open.er-api.com';
   }
-  await writeIfChanged('mid.json', { source, date, updatedAt: null, rates });
+  // 最新報價優先用 MoneyConvert（約每 5 分鐘更新、附報價時間）；歷史仍以每日資料為準
+  let latest = { source, date, updatedAt: null, rates };
+  try {
+    const m = await (await get('https://cdn.moneyconvert.net/api/latest.json', 2)).json();
+    const r = {}; for (const k in m.rates) r[k.toLowerCase()] = +m.rates[k];
+    const t = Date.parse(m.ts);
+    if (r.twd > 0 && t && Math.abs(r.twd / rates.twd - 1) < 0.03)
+      latest = { source: 'moneyconvert.net', date: new Date(t).toISOString().slice(0, 10), updatedAt: t, rates: trim(r) };
+  } catch (e) { log('MoneyConvert 失敗', e.message); }
+  await writeIfChanged('mid.json', latest);
   await updateMidHistory(date, rates);
 }
 

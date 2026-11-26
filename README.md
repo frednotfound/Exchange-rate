@@ -16,11 +16,11 @@
 
 | 項目 | 優先順序 |
 |---|---|
-| 國際中間價 | jsDelivr（fawazahmed0/currency-api）→ Cloudflare 鏡像 → open.er-api.com → 本站 `data/mid.json` → 上次快取 → 內建參考值 |
+| 國際中間價 | 同時向 MoneyConvert（約 5 分鐘更新）、fawazahmed0/currency-api（每日）、open.er-api.com（每日）取價，排除異常值後採用報價時間最新者 → 本站 `data/mid.json` → 上次快取 → 內建參考值 |
 | 臺灣銀行牌告 | 本站 `data/bot.json`（GitHub Actions 每 30 分鐘同步）與 CORS 代理即時讀取並行，取較新者 → 上次快取 → 該列暫以中間價計算並標示「中間價」 |
 | 走勢圖 | 本站 `data/mid-history.json` / `data/bot-history.json` → 線上逐日抓取 → 本機快取 |
 
-- 免費的國際中間價來源為**每日更新**；臺銀牌告於營業時間內隨掛牌更新。
+- 狀態列會顯示「報價時間」與「同步時間」。網頁開著時每 5 分鐘自動檢查一次；臺銀牌告以臺銀官網的「掛牌時間」為準。
 - 任何來源失敗時，計算機與介面都照常運作，狀態列會用綠／黃／紅點標示資料是否為最新。
 - `data/*.json` 同時會從 `raw.githubusercontent.com` 讀取，避免 Pages 尚未重新部署時拿到舊資料。若預設分支不是 `main`，請修改 `index.html` 最上方 `CONFIG.repoBranch`。
 
