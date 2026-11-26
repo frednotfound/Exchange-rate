@@ -203,6 +203,9 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .h-keys td{padding:4px 12px 4px 0}
 kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--key-hi);border:1px solid var(--line);color:var(--text)}
 .h-foot{margin-top:18px;font-size:12px;color:var(--text2)}
+.diag{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--card);font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--text);white-space:pre-wrap;user-select:text;-webkit-user-select:text}
+#safeProbe{position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .h-note{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
 #densitySeg{max-width:300px}
 
@@ -432,6 +435,8 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
         <tr><td><kbd>→</kbd>／<kbd>←</kbd></td><td>更換幣別／匯率詳情</td></tr>
       </table>
       <p class="h-foot">匯率僅供參考，實際交易以各銀行公告為準。</p>
+      <button class="h-play" id="diagBtn">顯示畫面診斷資訊</button>
+      <pre class="diag" id="diag" hidden></pre>
     </div>
   </div>
 </div>
@@ -1418,6 +1423,29 @@ document.documentElement.classList.toggle('standalone',STANDALONE);
 if('serviceWorker' in navigator && location.protocol==='https:'){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
+
+/* 畫面診斷資訊（協助排查 iPhone 主畫面 App 的版面問題） */
+function diagText(){
+  let pr=$('#safeProbe'); if(!pr){ pr=document.createElement('div'); pr.id='safeProbe'; document.body.appendChild(pr); }
+  const cs=getComputedStyle(pr), px=v=>Math.round(parseFloat(v)||0);
+  const a=$('#app').getBoundingClientRect(), vv=window.visualViewport;
+  const ios=(navigator.userAgent.match(/OS (\d+)_(\d+)(?:_(\d+))?/)||[]).slice(1).filter(Boolean).join('.')||'—';
+  return [
+    `iOS 版本：${ios}`,
+    `主畫面 App 模式：${STANDALONE?'是':'否'}`,
+    `螢幕 screen：${screen.width} × ${screen.height}`,
+    `可用 innerWidth × innerHeight：${innerWidth} × ${innerHeight}`,
+    `visualViewport：${vv?Math.round(vv.width)+' × '+Math.round(vv.height)+'（offsetTop '+Math.round(vv.offsetTop)+'）':'—'}`,
+    `documentElement.clientHeight：${document.documentElement.clientHeight}`,
+    `App 區塊：top ${Math.round(a.top)}、bottom ${Math.round(a.bottom)}、height ${Math.round(a.height)}`,
+    `安全區域 上/右/下/左：${px(cs.paddingTop)} / ${px(cs.paddingRight)} / ${px(cs.paddingBottom)} / ${px(cs.paddingLeft)}`,
+    `螢幕與可用高度差：${screen.height-innerHeight}`,
+    `devicePixelRatio：${devicePixelRatio}`,
+    `外觀：${document.documentElement.dataset.theme}（設定 ${S.theme}）`,
+  ].join('\n');
+}
+$('#diagBtn').addEventListener('click',()=>{ const d=$('#diag'); d.hidden=!d.hidden; if(!d.hidden){ d.textContent=diagText(); setTimeout(()=>d.scrollIntoView({block:'nearest',behavior:'smooth'}),30); } });
+window.addEventListener('resize',()=>{ const d=$('#diag'); if(d&&!d.hidden) d.textContent=diagText(); });
 
 /* 列表間距設定 */
 function applyDensity(d){

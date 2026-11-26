@@ -5,7 +5,7 @@
  * - 匯率 API 與 data/*.json：不經過快取（網頁本身已有快取與備援機制）
  * 修改此檔或想強制更新快取時，把 VERSION 改一個數字即可。
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `fx-shell-${VERSION}`;
 const FLAGS = 'fx-flags';
 const SHELL_FILES = ['./', './index.html', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
