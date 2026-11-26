@@ -74,9 +74,21 @@ svg{display:block}
 .subbar{padding:2px 14px 6px}
 
 /* ---------- Rows ---------- */
-#list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:2px 0 4px;scrollbar-width:none}
+#list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none;overscroll-behavior:contain}
+#rows{flex:1 0 auto;display:flex;flex-direction:column}
 #list::-webkit-scrollbar{display:none}
-.row{position:relative;flex:1 0 54px;max-height:86px;overflow:hidden;cursor:pointer;outline:none}
+.row{position:relative;flex:1 0 56px;max-height:88px;overflow:hidden;cursor:pointer;outline:none}
+/* 分隔線（對齊幣別代碼，滑動時不跟著移動） */
+.row::after{content:"";position:absolute;left:64px;right:18px;bottom:0;height:1px;background:var(--line);z-index:3;pointer-events:none}
+.row.active::after,.row:has(+ .row.active)::after{opacity:0}
+/* 目前選取列：左右兩側的拖曳把手，提示可左右滑動 */
+.row-fg::before,.row-fg::after{content:"";position:absolute;top:50%;width:3px;height:22px;margin-top:-11px;border-radius:2px;background:var(--text3);opacity:0;transition:opacity .2s}
+.row-fg::before{left:6px} .row-fg::after{right:6px}
+.row.active .row-fg::before,.row.active .row-fg::after{opacity:.9}
+@keyframes peekR{0%,100%{transform:none}35%,60%{transform:translateX(68px)}}
+@keyframes peekL{0%,100%{transform:none}35%,60%{transform:translateX(-68px)}}
+.row.peek-r .row-fg{animation:peekR 1.3s var(--ease)}
+.row.peek-l .row-fg{animation:peekL 1.3s var(--ease)}
 .row-under{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 22px;background:var(--under);color:var(--text2);font-size:13px;transition:background .15s,color .15s}
 .row-under span{display:flex;gap:7px;align-items:center;opacity:0;transition:opacity .12s}
 .row-under svg{width:18px;height:18px}
@@ -134,8 +146,8 @@ svg{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ---------- Keypad ---------- */
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 12px 4px}
-.key{height:clamp(46px,7.2dvh,64px);border-radius:16px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:6px 12px calc(8px + env(safe-area-inset-bottom))}
+.key{height:clamp(42px,6.2dvh,58px);border-radius:16px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
   transition:background .12s,transform .08s;touch-action:manipulation}
 html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .key.op{color:var(--accent-text);background:var(--key-hi);font-size:28px}
@@ -145,8 +157,9 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 @media (min-width:760px) and (min-height:680px){.key{height:clamp(44px,5.8dvh,58px);font-size:24px}}
 
 /* ---------- Banks ---------- */
-.banks{padding:0 12px calc(6px + env(safe-area-inset-bottom))}
-#bankToggle{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;height:30px;font-size:12.5px;color:var(--text2)}
+.banks{padding:10px 14px 14px;flex:none}
+#bankToggle{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;height:36px;font-size:13px;color:var(--text2);border-radius:10px}
+#bankToggle:hover{background:var(--key)}
 #bankToggle svg{width:14px;height:14px;transition:transform .2s}
 .banks.open #bankToggle svg{transform:rotate(180deg)}
 .bank-grid{display:none;grid-template-columns:repeat(3,1fr);gap:6px;padding:2px 0 6px}
@@ -154,6 +167,35 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .bank-grid a{height:34px;border-radius:10px;background:var(--key);display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;color:var(--text);text-decoration:none}
 .bank-grid a svg{width:12px;height:12px;color:var(--text2)}
 .bank-grid a:hover{background:var(--key-hi)}
+
+/* ---------- 首次使用提示 ---------- */
+.coach{position:absolute;left:12px;right:12px;z-index:70;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:16px;
+  background:var(--accent);color:var(--on-accent);box-shadow:0 12px 36px rgba(0,0,0,.35);font-size:13px;line-height:1.55;animation:coachIn .35s var(--ease)}
+.coach::before{content:"";position:absolute;top:-6px;left:50%;width:12px;height:12px;margin-left:-6px;background:var(--accent);transform:rotate(45deg);border-radius:2px}
+.coach-txt{flex:1;min-width:0}
+.coach-txt b{display:block;font-size:14px;margin-bottom:1px}
+.coach-ok{flex:none;height:32px;padding:0 14px;border-radius:10px;background:rgba(0,0,0,.18);color:inherit;font-weight:600;font-size:13px}
+@keyframes coachIn{from{opacity:0;transform:translateY(8px)}}
+
+/* ---------- 使用說明 ---------- */
+.help{padding:4px 20px 24px;font-size:14px;line-height:1.65}
+.help h3{font-size:14px;margin:18px 0 6px;color:var(--text)}
+.help ul{padding-left:18px;color:var(--text2)}
+.help li{margin:4px 0}
+.help li b{color:var(--text);font-weight:600}
+.h-demo{background:var(--card);border-radius:14px;padding:10px;overflow:hidden}
+.h-row{position:relative;height:52px;border-radius:10px;overflow:hidden;background:var(--under);display:flex;justify-content:space-between;align-items:center;padding:0 14px;font-size:12px;color:var(--text2)}
+.h-fg{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--row-hi);animation:hdemo 4s var(--ease) infinite}
+.h-fg i{width:26px;height:26px;border-radius:50%;background:var(--accent-soft)}
+.h-fg b{font-size:15px;color:var(--text)}
+.h-fg em{margin-left:auto;font-style:normal;font-family:var(--num);font-size:20px;color:var(--text)}
+@keyframes hdemo{0%,8%,42%,58%,92%,100%{transform:none}20%,32%{transform:translateX(84px)}70%,82%{transform:translateX(-84px)}}
+.h-play{display:block;margin:10px auto 0;font-size:13px;color:var(--accent-text);padding:6px 12px;border-radius:9px}
+.h-play:hover{background:var(--accent-soft)}
+.h-keys{border-collapse:collapse;font-size:13px;color:var(--text2)}
+.h-keys td{padding:4px 12px 4px 0}
+kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--key-hi);border:1px solid var(--line);color:var(--text)}
+.h-foot{margin-top:18px;font-size:12px;color:var(--text2)}
 
 /* ---------- Toast ---------- */
 #toast{position:absolute;left:50%;bottom:calc(46% + 10px);transform:translate(-50%,8px);background:var(--tip);color:var(--text);padding:9px 14px;border-radius:12px;font-size:13px;
@@ -270,6 +312,7 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
       <button data-src="mid" aria-pressed="true">國際中間價</button>
       <button data-src="bot" aria-pressed="false">臺灣銀行牌告</button>
     </div>
+    <button class="icon-btn" id="helpBtn" aria-label="使用說明" title="使用說明"></button>
     <button class="icon-btn" id="themeBtn" aria-label="切換外觀"></button>
   </header>
   <div class="subbar" id="typeBar" hidden>
@@ -281,7 +324,17 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
     </div>
   </div>
 
-  <main id="list" aria-label="幣別換算列表"></main>
+  <main id="list" aria-label="幣別換算列表">
+    <div id="rows"></div>
+    <section class="banks" id="banks">
+      <button id="bankToggle" aria-expanded="false"><span>常用銀行牌告匯率</span></button>
+      <div class="bank-grid" id="bankGrid"></div>
+    </section>
+  </main>
+  <div class="coach" id="coach" hidden>
+    <div class="coach-txt"><b>小提示</b>左右滑動任一幣別列：<br>向右滑 → 更換幣別　向左滑 → 匯率明細與走勢</div>
+    <button class="coach-ok" id="coachOk">知道了</button>
+  </div>
 
   <div class="status" id="status">
     <span class="dot" id="statusDot"></span>
@@ -296,11 +349,6 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
     <button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button><button class="key op" data-k="*" aria-label="乘">×</button>
     <button class="key" data-k=".">.</button><button class="key" data-k="0">0</button><button class="key" data-k="back" aria-label="退格（長按清除）" title="退格（長按清除）"></button><button class="key op" data-k="/" aria-label="除">÷</button>
   </section>
-
-  <footer class="banks" id="banks">
-    <button id="bankToggle" aria-expanded="false"><span>常用銀行牌告匯率</span></button>
-    <div class="bank-grid" id="bankGrid"></div>
-  </footer>
 
   <div id="toast" role="status" aria-live="polite"></div>
 </div>
@@ -323,6 +371,53 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
     <div class="grab"></div>
     <div class="d-head" id="dHead"></div>
     <div class="sheet-body" id="dBody"></div>
+  </div>
+</div>
+
+<!-- 使用說明 -->
+<div class="sheet-wrap" id="helpWrap" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hTitle">
+    <div class="grab"></div>
+    <div class="sheet-h"><h2 id="hTitle">使用說明</h2><button class="icon-btn" data-close aria-label="關閉"></button></div>
+    <div class="sheet-body help">
+      <div class="h-demo" aria-hidden="true">
+        <div class="h-row"><span class="h-l">更換幣別</span><span class="h-fg"><i></i><b>JPY</b><em>4.8043</em></span><span class="h-r">匯率走勢</span></div>
+      </div>
+      <button class="h-play" id="helpDemo">在列表上示範一次滑動手勢</button>
+
+      <h3>換算</h3>
+      <ul>
+        <li>點選任一幣別列，該列會出現灰色的 <b>1</b>，其他幣別立即顯示「1 單位」對應的匯率。</li>
+        <li>直接用下方鍵盤輸入金額，其他幣別同步換算。</li>
+        <li>可以直接打算式，例如 <b>1500 + 380 × 2</b>：大字顯示計算結果，小字顯示算式；點狀態列的「＝ 結算」收合成單一數字。</li>
+        <li>長按 ⌫ 可一次清除。</li>
+      </ul>
+
+      <h3>滑動幣別列</h3>
+      <ul>
+        <li><b>向右滑</b>：更換這一列的幣別（可搜尋中文、英文或代碼，例如「日元」、JPY）。選到已在列表中的幣別會自動互換位置。</li>
+        <li><b>向左滑</b>：查看匯率明細（臺銀現金／即期買賣價、與中間價差距）與近 7／30／90 天走勢圖。</li>
+        <li>電腦版：用滑鼠拖曳該列、點列上的 ⇄ 與 📈 按鈕，或在詳情上按右鍵。</li>
+      </ul>
+
+      <h3>資料來源</h3>
+      <ul>
+        <li><b>國際中間價</b>：國際市場報價，適合估算。狀態列顯示「報價時間」與「同步時間」。</li>
+        <li><b>臺灣銀行牌告</b>：可切換即期／現金、買入／賣出。拿新臺幣換外幣看「賣出」，外幣換回新臺幣看「買入」。標示「現金」「中間價」的幣別表示臺銀沒有該匯率，改用替代匯率。</li>
+        <li>狀態列圓點：綠色＝最新、黃色＝離線使用上次資料、紅色＝無法取得。點右側 ↻ 可手動更新。</li>
+      </ul>
+
+      <h3>電腦鍵盤快捷鍵</h3>
+      <table class="h-keys">
+        <tr><td><kbd>0–9</kbd> <kbd>.</kbd> <kbd>+</kbd> <kbd>-</kbd> <kbd>*</kbd> <kbd>/</kbd></td><td>輸入與運算</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>結算算式</td></tr>
+        <tr><td><kbd>Backspace</kbd>／<kbd>Esc</kbd></td><td>退格／清除</td></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>切換幣別列</td></tr>
+        <tr><td><kbd>→</kbd>／<kbd>←</kbd></td><td>更換幣別／匯率詳情</td></tr>
+      </table>
+      <p class="h-foot">匯率僅供參考，實際交易以各銀行公告為準。</p>
+    </div>
   </div>
 </div>
 
@@ -443,6 +538,7 @@ const ICON = {
   chev: sv('<path d="m6 9 6 6 6-6"/>'),
   ext: sv('<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>'),
   check: sv('<path d="m5 12 5 5L20 7"/>'),
+  help: sv('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.6"/><path d="M12 16.8h.01" stroke-width="2.4"/>'),
 };
 const pad = n=>String(n).padStart(2,'0');
 const isoLocal = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -624,7 +720,7 @@ function flagHTML(c){
   return `<img src="https://flagcdn.com/${c.cc}.svg" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'flag-fb',textContent:'${c.code.slice(0,2)}'}))">`;
 }
 function buildRows(){
-  const list=$('#list'); list.innerHTML='';
+  const list=$('#rows'); list.innerHTML='';
   S.rows.forEach((code,i)=>{
     const c=CUR_MAP[code];
     const el=document.createElement('div');
@@ -649,7 +745,7 @@ function buildRows(){
     list.appendChild(el);
   });
 }
-function fitSize(len){ return len<=9?30:Math.max(17,30-(len-9)*1.45); }
+function fitSize(len){ return len<=9?28:Math.max(17,28-(len-9)*1.4); }
 function render(){
   const typed=S.expr!=='';
   let amt = typed ? evalExpr(S.expr) : 1;
@@ -718,7 +814,7 @@ function attachRow(row){
     const s=st; st=null;
     if(s.mode!=='drag') return;
     suppressClick=Date.now()+400; reset();
-    if(commit && s.armed){ const i=+row.dataset.i; if(s.dx>0) openPicker(i); else openDetail(S.rows[i]); }
+    if(commit && s.armed){ hideCoach(); const i=+row.dataset.i; if(s.dx>0) openPicker(i); else openDetail(S.rows[i]); }
   };
   fg.addEventListener('pointerup',e=>end(e,true));
   fg.addEventListener('pointercancel',e=>end(e,false));
@@ -737,7 +833,7 @@ function attachRow(row){
 function updateStatus(){
   const dot=$('#statusDot'), txt=$('#statusText'); let cls='', text='', title='';
   const loading = S.midStatus==='loading' || S.botStatus==='loading';
-  $('#refreshBtn').classList.toggle('spin',loading);
+  setSpin(loading);
   if(S.source==='mid'){
     const m=S.mid;
     // 資料時間：有精確時間就顯示時間；只有日期的來源標示「每日價」
@@ -1249,10 +1345,9 @@ document.addEventListener('keydown',e=>{
 $('#bankGrid').innerHTML=CONFIG.banks.map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${n}${ICON.ext}</a>`).join('');
 $('#bankToggle').insertAdjacentHTML('beforeend',ICON.chev);
 (function(){
-  const desk=matchMedia('(min-width:760px) and (min-height:960px)').matches;
-  const open=LS.get('fx.banksOpen',desk);
+  const open=LS.get('fx.banksOpen2',false);
   $('#banks').classList.toggle('open',open); $('#bankToggle').setAttribute('aria-expanded',open);
-  $('#bankToggle').addEventListener('click',()=>{ const o=!$('#banks').classList.contains('open'); $('#banks').classList.toggle('open',o); $('#bankToggle').setAttribute('aria-expanded',o); LS.set('fx.banksOpen',o); });
+  $('#bankToggle').addEventListener('click',()=>{ const o=!$('#banks').classList.contains('open'); $('#banks').classList.toggle('open',o); $('#bankToggle').setAttribute('aria-expanded',o); LS.set('fx.banksOpen2',o); if(o) setTimeout(()=>$('#banks').scrollIntoView({block:'end',behavior:'smooth'}),30); });
 })();
 
 /* ============================================================
@@ -1261,7 +1356,36 @@ $('#bankToggle').insertAdjacentHTML('beforeend',ICON.chev);
 $('#refreshBtn').innerHTML=ICON.refresh;
 $('#pkIcon').outerHTML=ICON.search;
 $$('.sheet-h [data-close]').forEach(b=>b.innerHTML=ICON.close);
-$('#refreshBtn').addEventListener('click',()=>{ loadMid(); loadBot({live:S.source==='bot'}); });
+$('#refreshBtn').addEventListener('click',async()=>{
+  setSpin(true);
+  const ok=await Promise.all([loadMid(),loadBot({live:S.source==='bot'})]).then(r=>r[0]!==false).catch(()=>false);
+  updateStatus();
+  if(ok) toast(`匯率已更新 · ${hhmm(Date.now())}`,1600);
+});
+
+/* 同步按鈕旋轉：至少轉完整一圈，載入結束後在該圈轉完時才停，避免瞬間跳回 */
+var spinWant=false;
+function setSpin(on){ spinWant=on; if(on) $('#refreshBtn').classList.add('spin'); }
+$('#refreshBtn').addEventListener('animationiteration',()=>{ if(!spinWant) $('#refreshBtn').classList.remove('spin'); });
+
+/* ---------- 使用說明與首次提示 ---------- */
+$('#helpBtn').innerHTML=ICON.help;
+$('#helpBtn').addEventListener('click',()=>{ hideCoach(); openSheet('helpWrap'); });
+$('#helpDemo').addEventListener('click',()=>{ closeSheet('helpWrap'); setTimeout(()=>peekDemo(),380); });
+function peekDemo(){
+  const rows=$$('.row'); const row=rows[S.active===1?2:1]||rows[0]; if(!row) return;
+  row.scrollIntoView({block:'nearest'});
+  const run=(cls,dir,next)=>{ row.classList.add(cls,dir); setTimeout(()=>{ row.classList.remove(cls); setTimeout(()=>{ row.classList.remove(dir); next&&next(); },120); },1300); };
+  run('peek-r','dir-right',()=>setTimeout(()=>run('peek-l','dir-left'),150));
+}
+function showCoach(){
+  const c=$('#coach'), rows=$$('.row'), row=rows[S.active===1?2:1]||rows[0]; if(!row) return;
+  const ar=$('#app').getBoundingClientRect(), rr=row.getBoundingClientRect();
+  c.style.top=(rr.bottom-ar.top+10)+'px'; c.hidden=false;
+}
+function hideCoach(){ if(!$('#coach').hidden){ $('#coach').hidden=true; LS.set('fx.onboarded',true); } }
+$('#coachOk').addEventListener('click',hideCoach);
+if(!LS.get('fx.onboarded',false)) setTimeout(()=>{ if(document.querySelector('.sheet-wrap.open')) return; peekDemo(); showCoach(); },900);
 
 function autoRefresh(){
   const now=Date.now();
