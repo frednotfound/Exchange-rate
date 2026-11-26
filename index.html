@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>匯率換算｜即時多幣別</title>
+<meta name="description" content="極簡即時多幣別匯率換算：國際中間價與臺灣銀行牌告匯率、內建計算機、匯率走勢圖。">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="匯率">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000'/%3E%3Cpath d='M18 24h26l-7-7M46 40H20l7 7' fill='none' stroke='%23ff9f0a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Cpath d='M18 24h26l-7-7M46 40H20l7 7' fill='none' stroke='%23ff9f0a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://flagcdn.com">
+<script>
+  /* 先套用主題，避免閃爍 */
+  (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}})();
+</script>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --num:"SF Pro Display",-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --desk:#0b0b0c; --app:#000; --row-hi:#17171a; --under:#141416;
+  --text:#f5f5f7; --text2:#8e8e93; --text3:#4d4d52; --line:rgba(255,255,255,.08);
+  --key:#1c1c1e; --key-hi:#262629; --key-press:#3a3a3d;
+  --accent:#ff9f0a; --accent-text:#ffb340; --accent-soft:rgba(255,159,10,.16); --on-accent:#1a1000;
+  --seg-bg:#1c1c1e; --seg-on:#3a3a3d;
+  --sheet:#111113; --card:#1c1c1e; --input:#232326; --tip:#2c2c2e;
+  --good:#30d158; --warn:#ffd60a; --bad:#ff453a; --up:#ff6961; --down:#4cd964;
+  --shadow:0 30px 80px rgba(0,0,0,.6);
+}
+html[data-theme="light"]{
+  color-scheme:light;
+  --desk:#e9e9ee; --app:#f5f5f7; --row-hi:#e6e6eb; --under:#dedee4;
+  --text:#111113; --text2:#6e6e73; --text3:#b9b9bf; --line:rgba(0,0,0,.08);
+  --key:#ffffff; --key-hi:#ececf0; --key-press:#d4d4da;
+  --accent:#e07800; --accent-text:#b45f00; --accent-soft:rgba(224,120,0,.13); --on-accent:#fff;
+  --seg-bg:#e3e3e8; --seg-on:#ffffff;
+  --sheet:#f5f5f7; --card:#ffffff; --input:#e6e6eb; --tip:#ffffff;
+  --good:#1a9e4b; --warn:#c98a00; --bad:#d92d20; --up:#d92d20; --down:#16a34a;
+  --shadow:0 30px 80px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--desk);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{display:flex;justify-content:center}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{display:block}
+[hidden]{display:none!important}
+
+/* ---------- App shell ---------- */
+#app{width:100%;max-width:560px;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--app);
+  padding-top:env(safe-area-inset-top);touch-action:manipulation;user-select:none;-webkit-user-select:none;position:relative}
+@media (min-width:760px) and (min-height:680px){
+  body{align-items:center;padding:24px}
+  #app{max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
+}
+
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 12px 6px 14px}
+.seg{display:flex;flex:1;background:var(--seg-bg);border-radius:11px;padding:3px;gap:2px}
+.seg button{flex:1;height:32px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:background .2s,color .2s;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.seg.small{border-radius:9px;padding:2px}
+.seg.small button{height:26px;font-size:12.5px;border-radius:7px}
+.icon-btn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--text2);flex:none}
+.icon-btn:hover{color:var(--text);background:var(--key)}
+.icon-btn svg{width:20px;height:20px}
+.subbar{padding:2px 14px 6px}
+
+/* ---------- Rows ---------- */
+#list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:2px 0 4px;scrollbar-width:none}
+#list::-webkit-scrollbar{display:none}
+.row{position:relative;flex:1 0 54px;max-height:86px;overflow:hidden;cursor:pointer;outline:none}
+.row-under{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 22px;background:var(--under);color:var(--text2);font-size:13px;transition:background .15s,color .15s}
+.row-under span{display:flex;gap:7px;align-items:center;opacity:0;transition:opacity .12s}
+.row-under svg{width:18px;height:18px}
+.row.dir-right .u-left,.row.dir-left .u-right{opacity:1}
+.row:not(.dragging):not(.dir-left):not(.dir-right) .row-under{visibility:hidden}
+.row.armed .row-under{background:var(--accent);color:var(--on-accent)}
+.row-fg{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:0 18px;background:var(--app);
+  transition:transform .3s var(--ease),background .18s;touch-action:pan-y;will-change:transform}
+.row.active .row-fg{background:var(--row-hi)}
+.row.dragging .row-fg{transition:background .18s}
+.row:not(.active):focus-visible .row-fg{box-shadow:inset 0 0 0 2px var(--accent)}
+.flag{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;background:var(--key);box-shadow:inset 0 0 0 1px var(--line);display:grid;place-items:center}
+.flag img{width:100%;height:100%;object-fit:cover;display:block}
+.flag-fb{font-style:normal;font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.02em}
+.code{font-size:17px;font-weight:600;letter-spacing:.03em;width:46px;flex:none}
+.amt-wrap{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.amt{display:flex;align-items:center;justify-content:flex-end;max-width:100%;font-family:var(--num);font-size:var(--fs,30px);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.08;white-space:nowrap;letter-spacing:-.01em}
+.val{overflow:hidden;text-overflow:ellipsis}
+.caret{display:none;width:2px;height:.95em;background:var(--accent);margin-left:3px;border-radius:1px;animation:blink 1.1s steps(1) infinite}
+.row.active .caret{display:block}
+.row.placeholder .val{color:var(--text3)}
+@keyframes blink{50%{opacity:0}}
+.sub{font-size:12.5px;color:var(--text2);display:flex;gap:6px;align-items:center;white-space:nowrap;max-width:100%;overflow:hidden}
+.res{color:var(--accent-text);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.res:empty{display:none}
+.tag{font-size:10.5px;line-height:1;padding:3px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);flex:none}
+.acts{display:none}
+@media (hover:hover) and (pointer:fine){
+  .acts{display:flex;gap:2px;opacity:0;transition:opacity .15s;flex:none}
+  .row:hover .acts,.row:focus-visible .acts,.row.active .acts{opacity:1}
+  .act{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text2)}
+  .act:hover{background:var(--key-hi);color:var(--text)}
+  .act svg{width:17px;height:17px}
+}
+
+/* ---------- Status ---------- */
+.status{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 16px;font-size:12px;color:var(--text2);border-top:1px solid var(--line);min-height:36px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex:none}
+.dot.ok{background:var(--good)} .dot.stale{background:var(--warn)} .dot.error{background:var(--bad)}
+.dot.loading{background:var(--text2);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+#statusText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#statusText.err{color:var(--bad)}
+#eqPill{height:26px;padding:0 10px;border-radius:13px;background:var(--accent-soft);color:var(--accent-text);font-size:13px;font-family:var(--num);font-variant-numeric:tabular-nums;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:none}
+#refreshBtn{width:30px;height:30px}
+#refreshBtn svg{width:16px;height:16px}
+#refreshBtn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Keypad ---------- */
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 12px 4px}
+.key{height:clamp(46px,7.2dvh,64px);border-radius:16px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
+  transition:background .12s,transform .08s;touch-action:manipulation}
+html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
+.key.op{color:var(--accent-text);background:var(--key-hi);font-size:28px}
+.key.pressed{background:var(--key-press);transform:scale(.965)}
+.key svg{width:26px;height:26px}
+@media (hover:hover){.key:hover{background:var(--key-hi)} .key.op:hover{background:var(--key-press)}}
+@media (min-width:760px) and (min-height:680px){.key{height:clamp(44px,5.8dvh,58px);font-size:24px}}
+
+/* ---------- Banks ---------- */
+.banks{padding:0 12px calc(6px + env(safe-area-inset-bottom))}
+#bankToggle{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;height:30px;font-size:12.5px;color:var(--text2)}
+#bankToggle svg{width:14px;height:14px;transition:transform .2s}
+.banks.open #bankToggle svg{transform:rotate(180deg)}
+.bank-grid{display:none;grid-template-columns:repeat(3,1fr);gap:6px;padding:2px 0 6px}
+.banks.open .bank-grid{display:grid}
+.bank-grid a{height:34px;border-radius:10px;background:var(--key);display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;color:var(--text);text-decoration:none}
+.bank-grid a svg{width:12px;height:12px;color:var(--text2)}
+.bank-grid a:hover{background:var(--key-hi)}
+
+/* ---------- Toast ---------- */
+#toast{position:absolute;left:50%;bottom:calc(46% + 10px);transform:translate(-50%,8px);background:var(--tip);color:var(--text);padding:9px 14px;border-radius:12px;font-size:13px;
+  box-shadow:0 8px 30px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;max-width:86%;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- Sheets ---------- */
+.sheet-wrap{position:fixed;inset:0;z-index:60}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .28s}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:90dvh;background:var(--sheet);border-radius:22px 22px 0 0;transform:translateY(100%);
+  transition:transform .32s var(--ease);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.sheet-wrap.open .backdrop{opacity:1}
+.sheet-wrap.open .sheet{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--text3);margin:8px auto 2px;flex:none}
+.sheet-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+#pickerWrap .sheet{height:86dvh}
+@media (min-width:760px){
+  .sheet{left:50%;top:50%;bottom:auto;right:auto;width:min(540px,92vw);max-height:86vh;border-radius:22px;transform:translate(-50%,-47%) scale(.98);opacity:0;transition:transform .25s var(--ease),opacity .2s;padding-bottom:0}
+  .sheet-wrap.open .sheet{transform:translate(-50%,-50%);opacity:1}
+  #pickerWrap .sheet{height:min(720px,86vh)}
+  .grab{display:none}
+}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 18px;flex:none}
+.sheet-h h2{font-size:16px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Picker */
+.search{display:flex;align-items:center;gap:8px;margin:0 14px 8px;padding:0 12px;height:40px;border-radius:12px;background:var(--input);flex:none}
+.search svg{width:18px;height:18px;color:var(--text2);flex:none}
+.search input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--text);font:inherit;font-size:16px;user-select:text;-webkit-user-select:text}
+.pk-sec{font-size:12px;color:var(--text2);padding:12px 18px 6px;font-weight:500}
+.pk-item{width:100%;display:flex;align-items:center;gap:12px;padding:9px 18px;text-align:left}
+.pk-item:hover,.pk-item.kb{background:var(--row-hi)}
+.pk-item .flag{width:30px;height:30px}
+.pk-code{font-weight:600;width:42px;flex:none;font-size:15px}
+.pk-name{flex:1;min-width:0;display:flex;flex-direction:column;font-size:14.5px}
+.pk-name small{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:11px;padding:3px 7px;border-radius:7px;background:var(--key-hi);color:var(--text2);flex:none;white-space:nowrap}
+.badge.acc{background:var(--accent-soft);color:var(--accent-text)}
+.pk-check{width:20px;height:20px;color:var(--accent);flex:none}
+.pk-empty{padding:40px 18px;text-align:center;color:var(--text2);font-size:14px}
+.pk-foot{padding:14px 18px 22px;text-align:center}
+.link-btn{font-size:13px;color:var(--accent-text);padding:6px 10px;border-radius:8px}
+.link-btn:hover{background:var(--accent-soft)}
+
+/* Detail */
+.d-head{display:flex;align-items:center;gap:12px;padding:8px 12px 6px 18px;flex:none}
+.d-head .flag{width:40px;height:40px}
+.d-title{flex:1;min-width:0;display:flex;flex-direction:column}
+.d-title b{font-size:19px;letter-spacing:.02em}
+.d-title span{font-size:13px;color:var(--text2)}
+.d-quote{padding:6px 18px 12px}
+.q-main{font-family:var(--num);font-size:15px;color:var(--text2)}
+.q-main b{font-size:30px;color:var(--text);font-weight:500;font-variant-numeric:tabular-nums;margin:0 4px}
+.q-sub{font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.5}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 18px 12px;scrollbar-width:none;align-items:center}
+.chips::-webkit-scrollbar{display:none}
+.chips .lbl{font-size:12px;color:var(--text2);flex:none;margin-right:2px}
+.chip{height:28px;padding:0 11px;border-radius:14px;background:var(--card);font-size:13px;font-weight:500;flex:none;color:var(--text2);border:1px solid var(--line)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.card{margin:0 14px 12px;background:var(--card);border-radius:16px;padding:14px}
+.card-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;font-size:14px;font-weight:600}
+.card-h small{font-size:11.5px;font-weight:400;color:var(--text2)}
+.note{font-size:13px;color:var(--text2);line-height:1.6}
+.bt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.bt th{font-size:12px;font-weight:500;color:var(--text2);text-align:right;padding:4px 6px}
+.bt th:first-child,.bt tbody th{text-align:left;width:48px}
+.bt td{text-align:right;padding:7px 6px;border-radius:9px}
+.bt td b{display:block;font-family:var(--num);font-size:17px;font-weight:500}
+.bt td small{font-size:11px;color:var(--text2)}
+.bt td.sel{background:var(--accent-soft)}
+.bt td.sel b{color:var(--accent-text)}
+.bt td.na{color:var(--text3);font-size:13px}
+.bt-foot{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--text2)}
+.bt-foot b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.hint{font-size:11.5px;color:var(--text2);margin-top:8px;line-height:1.55}
+.ctrl{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.ctrl .seg{flex:1 1 auto;min-width:140px}
+.card .seg{background:var(--app)}
+.chart{position:relative;height:210px;touch-action:pan-y}
+.chart svg{width:100%;height:100%;overflow:visible}
+.chart .ax{font-size:10.5px;fill:var(--text2);font-family:var(--num)}
+.chart .mk{font-size:11px;font-weight:600;fill:var(--text);font-family:var(--num)}
+.chart .grid{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .cross{stroke:var(--text2);stroke-width:1}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--tip);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px;white-space:nowrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);transform:translateX(-50%)}
+.tip b{font-family:var(--num);font-size:14px;font-weight:600;display:block}
+.tip span{color:var(--text2)}
+.chart-msg{height:100%;display:grid;place-items:center;text-align:center;color:var(--text2);font-size:13px;gap:8px;align-content:center}
+.skel{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--key) 0,var(--key-hi) 50%,var(--key) 100%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.stats div{background:var(--app);border-radius:11px;padding:8px 6px;text-align:center;min-width:0}
+.stats span{display:block;font-size:11px;color:var(--text2)}
+.stats b{display:block;font-family:var(--num);font-size:14px;font-weight:600;margin:2px 0;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.stats em{display:block;font-style:normal;font-size:10.5px;color:var(--text2)}
+.up{color:var(--up)} .down{color:var(--down)}
+.gauge{margin-top:14px}
+.gauge-bar{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--down),var(--key-press) 50%,var(--up));opacity:.9}
+.gauge-bar i{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--text);border:3px solid var(--card);transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.gauge-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-top:6px}
+.verdict{font-size:13px;line-height:1.65;margin-top:10px}
+.verdict b{color:var(--accent-text);font-weight:600}
+.src-note{font-size:11px;color:var(--text2);margin-top:10px;line-height:1.5}
+.retry{margin-top:4px;padding:6px 14px;border-radius:9px;background:var(--key-hi);font-size:13px}
+.d-pad{height:10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="seg" id="srcSeg" role="group" aria-label="匯率資料來源">
+      <button data-src="mid" aria-pressed="true">國際中間價</button>
+      <button data-src="bot" aria-pressed="false">臺灣銀行牌告</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" aria-label="切換外觀"></button>
+  </header>
+  <div class="subbar" id="typeBar" hidden>
+    <div class="seg small" id="typeSeg" role="group" aria-label="臺銀匯率種類">
+      <button data-type="spotSell">即期賣出</button>
+      <button data-type="cashSell">現金賣出</button>
+      <button data-type="spotBuy">即期買入</button>
+      <button data-type="cashBuy">現金買入</button>
+    </div>
+  </div>
+
+  <main id="list" aria-label="幣別換算列表"></main>
+
+  <div class="status" id="status">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">載入匯率中…</span>
+    <button id="eqPill" hidden aria-label="結算算式"></button>
+    <button class="icon-btn" id="refreshBtn" aria-label="重新整理匯率" title="重新整理匯率"></button>
+  </div>
+
+  <section class="keypad" id="keypad" aria-label="計算機鍵盤">
+    <button class="key" data-k="7">7</button><button class="key" data-k="8">8</button><button class="key" data-k="9">9</button><button class="key op" data-k="+" aria-label="加">+</button>
+    <button class="key" data-k="4">4</button><button class="key" data-k="5">5</button><button class="key" data-k="6">6</button><button class="key op" data-k="-" aria-label="減">−</button>
+    <button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button><button class="key op" data-k="*" aria-label="乘">×</button>
+    <button class="key" data-k=".">.</button><button class="key" data-k="0">0</button><button class="key" data-k="back" aria-label="退格（長按清除）" title="退格（長按清除）"></button><button class="key op" data-k="/" aria-label="除">÷</button>
+  </section>
+
+  <footer class="banks" id="banks">
+    <button id="bankToggle" aria-expanded="false"><span>常用銀行牌告匯率</span></button>
+    <div class="bank-grid" id="bankGrid"></div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!-- 幣別選擇 -->
+<div class="sheet-wrap" id="pickerWrap" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+    <div class="grab"></div>
+    <div class="sheet-h"><h2 id="pkTitle">更換幣別</h2><button class="icon-btn" data-close aria-label="關閉"></button></div>
+    <label class="search"><span id="pkIcon"></span><input id="pkSearch" type="search" placeholder="搜尋：日元、JPY、澳幣、AUD…" autocomplete="off" enterkeyhint="go"></label>
+    <div class="sheet-body" id="pkList"></div>
+  </div>
+</div>
+
+<!-- 匯率詳情 -->
+<div class="sheet-wrap" id="detailWrap" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <div class="grab"></div>
+    <div class="d-head" id="dHead"></div>
+    <div class="sheet-body" id="dBody"></div>
+  </div>
+</div>
+
+<noscript><p style="padding:24px;color:#888">此網站需要啟用 JavaScript。</p></noscript>
+
+<script>
+'use strict';
+/* ============================================================
+ *  設定（可依需求修改）
+ * ============================================================ */
+const CONFIG = {
+  defaultRows: ['TWD','JPY','USD','EUR','CNY','HKD','KRW'],
+  // GitHub Actions 產生的 data/*.json 會同時從「本站」與 raw.githubusercontent.com 讀取（取較新者）
+  // 若自動判斷 repo 失敗，可在此手動填入，例如 owner:'yourname', repo:'fx'
+  repoOwner: '', repoName: '', repoBranch: 'main',
+  banks: [
+    ['臺灣銀行','https://rate.bot.com.tw/xrt?Lang=zh-TW'],
+    ['玉山銀行','https://www.esunbank.com/zh-tw/personal/deposit/rate/forex/foreign-exchange-rates'],
+    ['國泰世華','https://www.cathaybk.com.tw/cathaybk/personal/product/deposit/currency-billboard/'],
+    ['中國信託','https://www.ctbcbank.com/twrbo/zh_tw/dep_index/dep_ratequery/dep_foreign_rates.html'],
+    ['台新銀行','https://www.taishinbank.com.tw/TSB/personal/deposit/lookup/realtime/'],
+    ['永豐銀行','https://bank.sinopac.com/MMA8/bank/html/rate/bank_ExchangeRate.html'],
+  ],
+};
+
+/* ============================================================
+ *  幣別資料：代碼、中文、符號、國旗、英文、搜尋關鍵字
+ * ============================================================ */
+const CUR = [
+ ['TWD','新臺幣','NT$','tw','New Taiwan Dollar','台幣 臺幣 台灣 臺灣 taiwan ntd'],
+ ['JPY','日元','¥','jp','Japanese Yen','日圓 日幣 日本 japan yen'],
+ ['USD','美元','US$','us','US Dollar','美金 美國 america'],
+ ['EUR','歐元','€','eu','Euro','歐洲 歐盟 europe 德國 法國 義大利 西班牙'],
+ ['CNY','人民幣','¥','cn','Chinese Yuan','中國 大陸 rmb china'],
+ ['HKD','港幣','HK$','hk','Hong Kong Dollar','港元 香港 hongkong'],
+ ['KRW','韓元','₩','kr','South Korean Won','韓幣 韓圜 韓國 korea'],
+ ['GBP','英鎊','£','gb','British Pound','英國 uk britain'],
+ ['AUD','澳幣','A$','au','Australian Dollar','澳元 澳洲 australia'],
+ ['CAD','加拿大幣','C$','ca','Canadian Dollar','加幣 加元 加拿大 canada'],
+ ['SGD','新加坡幣','S$','sg','Singapore Dollar','新幣 新元 星幣 新加坡 singapore'],
+ ['CHF','瑞士法郎','CHF','ch','Swiss Franc','瑞郎 瑞士 switzerland'],
+ ['NZD','紐西蘭幣','NZ$','nz','New Zealand Dollar','紐幣 紐元 紐西蘭 newzealand'],
+ ['THB','泰銖','฿','th','Thai Baht','泰幣 泰國 thailand'],
+ ['PHP','菲律賓披索','₱','ph','Philippine Peso','菲幣 菲律賓 philippines'],
+ ['IDR','印尼盾','Rp','id','Indonesian Rupiah','印尼幣 印尼 indonesia 峇里島 bali'],
+ ['VND','越南盾','₫','vn','Vietnamese Dong','越南幣 越南 vietnam'],
+ ['MYR','馬來西亞令吉','RM','my','Malaysian Ringgit','馬幣 馬來西亞 malaysia'],
+ ['ZAR','南非幣','R','za','South African Rand','南非 蘭特 southafrica'],
+ ['SEK','瑞典克朗','kr','se','Swedish Krona','瑞典幣 瑞典 sweden'],
+ ['NOK','挪威克朗','kr','no','Norwegian Krone','挪威 norway'],
+ ['DKK','丹麥克朗','kr','dk','Danish Krone','丹麥 denmark'],
+ ['MOP','澳門幣','MOP$','mo','Macanese Pataca','澳門 pataca macau'],
+ ['INR','印度盧比','₹','in','Indian Rupee','印度 india'],
+ ['TRY','土耳其里拉','₺','tr','Turkish Lira','土耳其 turkey'],
+ ['AED','阿聯迪拉姆','AED','ae','UAE Dirham','杜拜 阿聯酋 dubai uae'],
+ ['SAR','沙烏地里亞爾','SAR','sa','Saudi Riyal','沙烏地阿拉伯 saudi'],
+ ['QAR','卡達里亞爾','QAR','qa','Qatari Riyal','卡達 qatar'],
+ ['KWD','科威特第納爾','KD','kw','Kuwaiti Dinar','科威特 kuwait'],
+ ['ILS','以色列謝克爾','₪','il','Israeli Shekel','以色列 israel'],
+ ['EGP','埃及鎊','E£','eg','Egyptian Pound','埃及 egypt'],
+ ['RUB','俄羅斯盧布','₽','ru','Russian Ruble','俄國 俄羅斯 russia'],
+ ['PLN','波蘭茲羅提','zł','pl','Polish Złoty','波蘭 poland'],
+ ['CZK','捷克克朗','Kč','cz','Czech Koruna','捷克 czech'],
+ ['HUF','匈牙利福林','Ft','hu','Hungarian Forint','匈牙利 hungary'],
+ ['RON','羅馬尼亞列伊','lei','ro','Romanian Leu','羅馬尼亞 romania'],
+ ['ISK','冰島克朗','kr','is','Icelandic Króna','冰島 iceland'],
+ ['UAH','烏克蘭格里夫納','₴','ua','Ukrainian Hryvnia','烏克蘭 ukraine'],
+ ['BRL','巴西雷亞爾','R$','br','Brazilian Real','巴西 brazil'],
+ ['MXN','墨西哥披索','MX$','mx','Mexican Peso','墨西哥 mexico'],
+ ['ARS','阿根廷披索','AR$','ar','Argentine Peso','阿根廷 argentina'],
+ ['CLP','智利披索','CL$','cl','Chilean Peso','智利 chile'],
+ ['COP','哥倫比亞披索','CO$','co','Colombian Peso','哥倫比亞 colombia'],
+ ['PEN','秘魯索爾','S/','pe','Peruvian Sol','秘魯 peru'],
+ ['KHR','柬埔寨瑞爾','៛','kh','Cambodian Riel','柬埔寨 cambodia 吳哥窟'],
+ ['LAK','寮國基普','₭','la','Lao Kip','寮國 laos'],
+ ['MMK','緬甸元','K','mm','Myanmar Kyat','緬甸 myanmar'],
+ ['BND','汶萊元','B$','bn','Brunei Dollar','汶萊 brunei'],
+ ['PKR','巴基斯坦盧比','₨','pk','Pakistani Rupee','巴基斯坦 pakistan'],
+ ['LKR','斯里蘭卡盧比','Rs','lk','Sri Lankan Rupee','斯里蘭卡 srilanka'],
+ ['NPR','尼泊爾盧比','Rs','np','Nepalese Rupee','尼泊爾 nepal'],
+ ['BDT','孟加拉塔卡','৳','bd','Bangladeshi Taka','孟加拉 bangladesh'],
+ ['MNT','蒙古圖格里克','₮','mn','Mongolian Tögrög','蒙古 mongolia'],
+ ['KZT','哈薩克堅戈','₸','kz','Kazakhstani Tenge','哈薩克 kazakhstan'],
+ ['MVR','馬爾地夫拉菲亞','Rf','mv','Maldivian Rufiyaa','馬爾地夫 maldives'],
+ ['FJD','斐濟元','FJ$','fj','Fijian Dollar','斐濟 fiji'],
+].map(([code,zh,sym,cc,en,kw])=>({code,zh,sym,cc,en,search:(code+zh+en+kw+sym).toLowerCase().replace(/\s+/g,'')}));
+const CUR_MAP = Object.fromEntries(CUR.map(c=>[c.code,c]));
+const CODES_LC = CUR.map(c=>c.code.toLowerCase());
+
+const BOT_CODES = new Set(['USD','HKD','GBP','AUD','CAD','SGD','CHF','JPY','ZAR','SEK','NZD','THB','PHP','IDR','EUR','KRW','VND','MYR','CNY']);
+const BOT_TYPES = {spotSell:'即期賣出', cashSell:'現金賣出', spotBuy:'即期買入', cashBuy:'現金買入'};
+const BOT_ALT   = {spotSell:'cashSell', cashSell:'spotSell', spotBuy:'cashBuy', cashBuy:'spotBuy'};
+const ZERO_DEC  = new Set(['TWD','JPY','KRW','VND','IDR','KHR','LAK','MMK','CLP','COP','HUF','ISK','MNT','PKR','LKR','NPR','BDT','KZT']);
+
+/* 內建參考匯率（每 1 USD；2026-11-25 快照）— 僅在完全無法連網且無快取時使用 */
+const BUILTIN_MID = {date:'2026-11-25', rates:{usd:1,twd:33.11454928,jpy:159.0930161,eur:0.91380152,cny:6.67106557,hkd:7.8380884,krw:1342.39936605,gbp:0.76441373,aud:1.52177879,cad:1.42867319,sgd:1.29133797,chf:0.83459869,nzd:1.83247267,thb:34.09309112,php:63.66302851,idr:18305.19842499,vnd:25756.95823344,myr:4.11659757,zar:17.60255083,sek:10.28553939,nok:9.87089058,dkk:6.83020957,mop:8.07323105,inr:92.29189267,try:50.66794772,rub:81.99716413,brl:5.90559386,mxn:19.53477876,aed:3.6725,sar:3.75,ils:3.35910258,pln:4.08594541,czk:22.32856436,huf:339.3759482,isk:125.38494314,khr:4084.22223569,lak:22539.4554266,mmk:2099.4986786,bnd:1.29133797,pkr:276.39494377,lkr:332.4696121,npr:147.73624719,bdt:124.73027999,mnt:3610.94830254,kzt:459.0925809,egp:54.21262945,qar:3.64,kwd:0.31169495,ars:1592.42196946,clp:1032.87386586,cop:3618.96431785,pen:3.47751654,ron:4.88382886,uah:45.30092085,fjd:2.30628798,mvr:15.43141239}};
+
+/* ============================================================
+ *  小工具
+ * ============================================================ */
+const $  = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch{ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
+};
+const sv = d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  swap: sv('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>'),
+  chart: sv('<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/>'),
+  refresh: sv('<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>'),
+  back: sv('<path d="M21 5H9l-7 7 7 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Z"/><path d="m17 9-6 6"/><path d="m11 9 6 6"/>'),
+  close: sv('<path d="M18 6 6 18M6 6l12 12"/>'),
+  search: sv('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  moon: sv('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>'),
+  auto: sv('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>'),
+  chev: sv('<path d="m6 9 6 6 6-6"/>'),
+  ext: sv('<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>'),
+  check: sv('<path d="m5 12 5 5L20 7"/>'),
+};
+const pad = n=>String(n).padStart(2,'0');
+const isoLocal = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays = (iso,n)=>{ const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const md = iso=>{ const [,m,d]=iso.split('-'); return `${+m}/${+d}`; };
+const WD = ['日','一','二','三','四','五','六'];
+function fmtWhen(ms){
+  const d=new Date(ms), now=new Date();
+  const same = d.toDateString()===now.toDateString();
+  return (same?'今天 ':`${d.getMonth()+1}/${d.getDate()} `)+`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+const hhmm = ms=>{ const d=new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const num = x=>{ const v=parseFloat(x); return v>0?v:null; };
+const nf = (v,d)=>v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* 匯率格式（1 單位預覽用） */
+function fmtRate(v){
+  if(!isFinite(v)) return '—';
+  const a=Math.abs(v); let d;
+  if(a===0) d=0; else if(a>=1000) d=2; else if(a>=1) d=4;
+  else d=Math.min(8,Math.max(4,3-Math.floor(Math.log10(a))));
+  return nf(v,d);
+}
+/* 金額格式（輸入金額換算用） */
+function fmtAmount(v,code){
+  if(!isFinite(v)) return '—';
+  const a=Math.abs(v); let d;
+  if(a===0) d=0;
+  else if(a>=100 && ZERO_DEC.has(code)) d=0;
+  else if(a>=1) d=2;
+  else d=Math.min(8,Math.max(2,3-Math.floor(Math.log10(a))));
+  return nf(v,d);
+}
+const pct = (x,d=2)=>isFinite(x)?`${x>=0?'+':''}${(x*100).toFixed(d)}%`:'—';
+
+async function fetchT(url,ms=7000,opts={}){
+  const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms);
+  try{
+    const r=await fetch(url,{cache:'no-store',...opts,signal:c.signal});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r;
+  }finally{ clearTimeout(t); }
+}
+async function pool(items,n,fn){
+  const out=new Array(items.length); let i=0;
+  await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{
+    while(i<items.length){ const k=i++; try{ out[k]=await fn(items[k]); }catch{ out[k]=null; } }
+  }));
+  return out;
+}
+let toastT;
+function toast(msg,ms=2200){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),ms); }
+const haptic = ()=>{ try{ navigator.vibrate && navigator.vibrate(8); }catch{} };
+
+/* ============================================================
+ *  狀態
+ * ============================================================ */
+function sanitizeRows(r){
+  const out=[];
+  if(Array.isArray(r)) for(const c of r){ if(CUR_MAP[c] && !out.includes(c)) out.push(c); }
+  for(const c of [...CONFIG.defaultRows,...CUR.map(x=>x.code)]){ if(out.length>=7) break; if(!out.includes(c)) out.push(c); }
+  return out.slice(0,7);
+}
+const S = {
+  rows: sanitizeRows(LS.get('fx.rows',CONFIG.defaultRows)),
+  active: 0,
+  expr: '',                                   // '' = 灰色 1（預覽狀態）
+  source: LS.get('fx.source','mid')==='bot'?'bot':'mid',
+  botType: BOT_TYPES[LS.get('fx.botType','spotSell')] ? LS.get('fx.botType','spotSell') : 'spotSell',
+  theme: ['auto','dark','light'].includes(LS.get('fx.theme','auto')) ? LS.get('fx.theme','auto') : 'auto',
+  mid: null, midStatus: 'loading',
+  bot: null, botStatus: 'idle', botLiveAt: 0,
+};
+(function initData(){
+  const c=LS.get('fx.mid',null);
+  if(c && c.rates && c.rates.twd>0) S.mid={...c,origin:'cache'};
+  else S.mid={...BUILTIN_MID,updatedAt:null,fetchedAt:0,via:'內建參考值',origin:'builtin'};
+  const b=LS.get('fx.bot',null);
+  if(b && validBot(b.rates)) S.bot={...b,origin:'cache'};
+})();
+
+/* ============================================================
+ *  換算核心
+ * ============================================================ */
+function midTWD(code){
+  const r=S.mid&&S.mid.rates; if(!r) return NaN;
+  const a=code==='USD'?1:r[code.toLowerCase()], t=r.twd;
+  return (a>0&&t>0)?t/a:NaN;
+}
+/* 回傳 1 單位該幣別 = ? TWD，以及是否使用了替代匯率 */
+function rateInfo(code){
+  if(S.source==='bot'){
+    if(code==='TWD') return {v:1,tag:''};
+    const b=S.bot&&S.bot.rates&&S.bot.rates[code];
+    if(b){
+      if(b[S.botType]>0) return {v:b[S.botType],tag:''};
+      const alt=BOT_ALT[S.botType];
+      if(b[alt]>0) return {v:b[alt],tag:alt.startsWith('cash')?'現金':'即期'};
+    }
+    return {v:midTWD(code),tag:'中間價'};
+  }
+  return {v:midTWD(code),tag:''};
+}
+const convert = (amt,from,to)=>amt*rateInfo(from).v/rateInfo(to).v;
+
+/* 四則運算（先乘除後加減） */
+function evalExpr(s){
+  s=s.replace(/[+\-*/.]+$/,'');
+  if(!s) return null;
+  if(s[0]==='-') s='0'+s;
+  const t=s.match(/\d+(?:\.\d*)?|[+\-*/]/g);
+  if(!t) return null;
+  const st=[parseFloat(t[0])];
+  for(let i=1;i<t.length;i+=2){
+    const op=t[i], n=parseFloat(t[i+1]);
+    if(isNaN(n)) break;
+    if(op==='*') st[st.length-1]*=n;
+    else if(op==='/') st[st.length-1]= n===0?NaN:st[st.length-1]/n;
+    else st.push(op==='-'?-n:n);
+  }
+  const r=st.reduce((a,b)=>a+b,0);
+  return isFinite(r)?parseFloat(r.toPrecision(14)):r;
+}
+const hasOp = e=>/[+\-*/]/.test(e.slice(1));
+function fmtExpr(e){
+  return e.replace(/\d+(?:\.\d*)?/g,m=>{ const [i,f]=m.split('.'); const ii=Number(i).toLocaleString('en-US'); return f===undefined?ii:ii+'.'+f; })
+          .replace(/(?!^)[+\-*/]/g,o=>' '+({'+':'+','-':'−','*':'×','/':'÷'})[o]+' ')
+          .replace(/^-/,'−');
+}
+function numToExpr(v){
+  let s=String(parseFloat(v.toPrecision(12)));
+  if(/e/i.test(s)) s=v.toFixed(8).replace(/\.?0+$/,'');
+  return s==='0'?'0':s;
+}
+function settle(){
+  if(!S.expr) return true;
+  if(!hasOp(S.expr)){ S.expr=S.expr.replace(/\.$/,''); return true; }
+  const v=evalExpr(S.expr);
+  if(v==null){ S.expr=''; return true; }
+  if(!isFinite(v)){ toast('無法除以 0'); return false; }
+  S.expr=numToExpr(v);
+  return true;
+}
+function press(k){
+  let e=S.expr;
+  const lastNum=(e.match(/\d*\.?\d*$/)||[''])[0];
+  const lastCh=e.slice(-1);
+  const isOp=c=>c!==''&&'+-*/'.includes(c);
+  if(/^\d$/.test(k)){
+    const [ip,fp]=lastNum.split('.');
+    if(fp!==undefined ? fp.length>=8 : ip.length>=15){ haptic(); return; }
+    e = lastNum==='0' ? e.slice(0,-1)+k : e+k;
+  }else if(k==='.'){
+    if(lastNum.includes('.')){ haptic(); return; }
+    e += lastNum==='' ? '0.' : '.';
+  }else if(isOp(k)){
+    if(e==='') e='1'+k;                       // 直接以預覽的 1 為基數
+    else if(e==='-') return;
+    else if(isOp(lastCh)) e=e.slice(0,-1)+k;
+    else { if(lastCh==='.') e=e.slice(0,-1); e+=k; }
+  }else if(k==='back'){
+    e=e.slice(0,-1); if(e==='-') e='';
+  }else if(k==='clear'){
+    e='';
+  }else if(k==='='){
+    settle(); render(); return;
+  }
+  if(e.length>48){ haptic(); return; }
+  S.expr=e; render();
+}
+
+/* ============================================================
+ *  畫面
+ * ============================================================ */
+function flagHTML(c){
+  return `<img src="https://flagcdn.com/${c.cc}.svg" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'flag-fb',textContent:'${c.code.slice(0,2)}'}))">`;
+}
+function buildRows(){
+  const list=$('#list'); list.innerHTML='';
+  S.rows.forEach((code,i)=>{
+    const c=CUR_MAP[code];
+    const el=document.createElement('div');
+    el.className='row'; el.dataset.i=i; el.tabIndex=0; el.setAttribute('role','button');
+    el.setAttribute('aria-label',`${code} ${c.zh}`);
+    el.innerHTML=`
+      <div class="row-under"><span class="u-left">${ICON.swap}<b>更換幣別</b></span><span class="u-right"><b>匯率走勢</b>${ICON.chart}</span></div>
+      <div class="row-fg">
+        <span class="flag">${flagHTML(c)}</span>
+        <span class="code">${code}</span>
+        <span class="acts">
+          <button class="act" data-act="pick" title="更換幣別（→ 或向右滑）" aria-label="更換幣別">${ICON.swap}</button>
+          <button class="act" data-act="detail" title="匯率詳情（← 或向左滑）" aria-label="匯率詳情">${ICON.chart}</button>
+        </span>
+        <span class="amt-wrap">
+          <span class="amt"><span class="val"></span><span class="caret"></span></span>
+          <span class="sub"><span class="res"></span><span class="tag" hidden></span><span class="nm">${c.zh} ${c.sym}</span></span>
+        </span>
+      </div>`;
+    el._val=$('.val',el); el._amt=$('.amt',el); el._res=$('.res',el); el._tag=$('.tag',el);
+    attachRow(el);
+    list.appendChild(el);
+  });
+}
+function fitSize(len){ return len<=9?30:Math.max(17,30-(len-9)*1.45); }
+function render(){
+  const typed=S.expr!=='';
+  let amt = typed ? evalExpr(S.expr) : 1;
+  if(amt==null) amt=0;
+  const from=S.rows[S.active];
+  $$('.row').forEach((el,i)=>{
+    const code=S.rows[i], active=i===S.active, info=rateInfo(code);
+    el.classList.toggle('active',active);
+    el.classList.toggle('placeholder',active&&!typed);
+    let txt, res='';
+    if(active){
+      txt = typed ? fmtExpr(S.expr) : '1';
+      if(typed && hasOp(S.expr)) res='= '+fmtAmount(amt,code);
+    }else{
+      const v=convert(amt,from,code);
+      txt = typed ? fmtAmount(v,code) : fmtRate(v);
+    }
+    if(el._val.textContent!==txt) el._val.textContent=txt;
+    el._res.textContent=res;
+    el._amt.style.setProperty('--fs',fitSize(txt.length)+'px');
+    el._tag.hidden=!info.tag; el._tag.textContent=info.tag;
+  });
+  const pill=$('#eqPill');
+  if(typed && hasOp(S.expr)){ pill.hidden=false; pill.textContent='= '+fmtAmount(amt,from); }
+  else pill.hidden=true;
+  if(isOpen('detailWrap')) renderDetailInfo();
+}
+function focusRow(i){
+  if(i===S.active) return;
+  settle();
+  S.active=i; S.expr='';
+  render();
+}
+
+/* 列的點擊、滑動與桌機按鈕 */
+let suppressClick=0;
+function attachRow(row){
+  const fg=$('.row-fg',row); let st=null;
+  const reset=()=>{ row.classList.remove('dragging','armed'); fg.style.transform=''; setTimeout(()=>row.classList.remove('dir-left','dir-right'),300); };
+  fg.addEventListener('pointerdown',e=>{
+    if(e.button>0||e.target.closest('.act')) return;
+    st={x:e.clientX,y:e.clientY,id:e.pointerId,mode:'pending',dx:0,armed:false};
+  });
+  fg.addEventListener('pointermove',e=>{
+    if(!st||e.pointerId!==st.id) return;
+    const dx=e.clientX-st.x, dy=e.clientY-st.y;
+    if(st.mode==='pending'){
+      if(Math.abs(dx)>8 && Math.abs(dx)>Math.abs(dy)*1.2){ st.mode='drag'; try{fg.setPointerCapture(e.pointerId);}catch{} row.classList.add('dragging'); }
+      else if(Math.abs(dy)>10){ st=null; return; }
+      else return;
+    }
+    e.preventDefault();
+    const lim=100; let d=dx;
+    if(Math.abs(d)>lim) d=Math.sign(d)*(lim+(Math.abs(d)-lim)*0.3);
+    st.dx=dx; fg.style.transform=`translateX(${d}px)`;
+    row.classList.toggle('dir-right',dx>0); row.classList.toggle('dir-left',dx<0);
+    const armed=Math.abs(dx)>72;
+    if(armed!==st.armed){ st.armed=armed; row.classList.toggle('armed',armed); if(armed) haptic(); }
+  });
+  const end=(e,commit)=>{
+    if(!st||e.pointerId!==st.id) return;
+    const s=st; st=null;
+    if(s.mode!=='drag') return;
+    suppressClick=Date.now()+400; reset();
+    if(commit && s.armed){ const i=+row.dataset.i; if(s.dx>0) openPicker(i); else openDetail(S.rows[i]); }
+  };
+  fg.addEventListener('pointerup',e=>end(e,true));
+  fg.addEventListener('pointercancel',e=>end(e,false));
+  row.addEventListener('click',e=>{
+    if(Date.now()<suppressClick) return;
+    const i=+row.dataset.i, a=e.target.closest('.act');
+    if(a){ e.stopPropagation(); a.dataset.act==='pick'?openPicker(i):openDetail(S.rows[i]); return; }
+    focusRow(i);
+  });
+  row.addEventListener('contextmenu',e=>{ if(matchMedia('(pointer:fine)').matches){ e.preventDefault(); openDetail(S.rows[+row.dataset.i]); } });
+}
+
+/* ============================================================
+ *  狀態列
+ * ============================================================ */
+function updateStatus(){
+  const dot=$('#statusDot'), txt=$('#statusText'); let cls='', text='', title='';
+  const loading = S.midStatus==='loading' || S.botStatus==='loading';
+  $('#refreshBtn').classList.toggle('spin',loading);
+  if(S.source==='mid'){
+    const m=S.mid, when = m.updatedAt?fmtWhen(m.updatedAt):md(m.date);
+    title=`來源：${m.via||''}${m.fetchedAt?`，取得於 ${fmtWhen(m.fetchedAt)}`:''}`;
+    if(m.origin==='builtin'){ cls=S.midStatus==='loading'?'loading':'error'; text= S.midStatus==='loading'?'國際市場中間價 · 連線中…':`無法連線 · 使用內建參考匯率（${md(m.date)}）`; }
+    else if(S.midStatus==='stale'){ cls='stale'; text=`離線 · 國際市場中間價（上次 ${when}）`; }
+    else { cls=S.midStatus==='loading'?'loading':'ok'; text=`國際市場中間價 · ${when} 更新`; }
+  }else{
+    const b=S.bot, tp=BOT_TYPES[S.botType];
+    if(!b){ cls=S.botStatus==='loading'?'loading':'error'; text= S.botStatus==='loading'?'臺灣銀行牌告 · 載入中…':'臺銀牌告暫時無法取得 · 暫以國際中間價計算'; }
+    else{
+      const when = b.updated?`掛牌 ${fmtWhen(b.updated)}`:`${fmtWhen(b.fetchedAt)} 取得`;
+      title=`來源：${b.via||'臺灣銀行'}${b.fetchedAt?`，取得於 ${fmtWhen(b.fetchedAt)}`:''}`;
+      if(S.botStatus==='stale'){ cls='stale'; text=`離線 · 臺灣銀行 ${tp}（${when}）`; }
+      else { cls=S.botStatus==='loading'?'loading':'ok'; text=`臺灣銀行 · ${tp} · ${when}`; }
+    }
+  }
+  dot.className='dot '+cls; txt.textContent=text; txt.title=title;
+  txt.classList.toggle('err',cls==='error');
+}
+
+/* ============================================================
+ *  資料：國際中間價
+ * ============================================================ */
+const fawaz = j=>({rates:j.usd,date:j.date,updatedAt:null});
+const MID_PROVIDERS = [
+  {name:'jsDelivr · fawazahmed0/currency-api', url:'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json', parse:fawaz},
+  {name:'Cloudflare · fawazahmed0/currency-api', url:'https://latest.currency-api.pages.dev/v1/currencies/usd.min.json', parse:fawaz},
+  {name:'ExchangeRate-API (open.er-api.com)', url:'https://open.er-api.com/v6/latest/USD', parse:j=>{
+    if(j.result!=='success') throw new Error('bad');
+    const rates={}; for(const k in j.rates) rates[k.toLowerCase()]=j.rates[k];
+    const t=j.time_last_update_unix*1000; return {rates,date:new Date(t).toISOString().slice(0,10),updatedAt:t};
+  }},
+];
+const validMid = r=>r && r.twd>0 && r.jpy>0 && r.eur>0;
+function trimRates(r){ const o={usd:1}; for(const c of CODES_LC){ const v=+r[c]; if(v>0) o[c]=v; } return o; }
+
+function repoInfo(){
+  if(CONFIG.repoOwner && CONFIG.repoName) return {owner:CONFIG.repoOwner,repo:CONFIG.repoName};
+  const h=location.hostname; if(!h.endsWith('.github.io')) return null;
+  const owner=h.split('.')[0], seg=location.pathname.split('/').filter(Boolean)[0];
+  return {owner, repo: seg && !seg.includes('.') ? seg : h};
+}
+async function fetchRepoJSON(file){
+  const bust=Math.floor(Date.now()/120000), urls=[`data/${file}`], r=repoInfo();
+  if(r) urls.push(`https://raw.githubusercontent.com/${r.owner}/${r.repo}/${CONFIG.repoBranch}/data/${file}`);
+  const res=await Promise.allSettled(urls.map(u=>fetchT(`${u}?v=${bust}`,6000).then(x=>x.json())));
+  const ok=res.filter(x=>x.status==='fulfilled'&&x.value&&typeof x.value==='object').map(x=>x.value);
+  if(!ok.length) throw new Error('no repo data');
+  ok.sort((a,b)=>(Date.parse(b.generatedAt)||0)-(Date.parse(a.generatedAt)||0));
+  return ok[0];
+}
+function setMid(d){
+  S.mid={...d,origin:'net'}; S.midStatus='ok';
+  LS.set('fx.mid',{rates:d.rates,date:d.date,updatedAt:d.updatedAt,fetchedAt:d.fetchedAt,via:d.via});
+  render(); updateStatus();
+}
+let midLoading=null;
+function loadMid(){
+  if(midLoading) return midLoading;
+  S.midStatus='loading'; updateStatus();
+  return midLoading=(async()=>{
+    for(const p of MID_PROVIDERS){
+      try{
+        const j=await (await fetchT(p.url,7000)).json(); const d=p.parse(j);
+        if(validMid(d.rates)){ setMid({...d,rates:trimRates(d.rates),fetchedAt:Date.now(),via:p.name}); return true; }
+      }catch{}
+    }
+    try{
+      const j=await fetchRepoJSON('mid.json');
+      if(validMid(j.rates)){ setMid({rates:trimRates(j.rates),date:j.date,updatedAt:j.updatedAt||null,fetchedAt:Date.now(),via:'本站備援資料（GitHub Actions）'}); return true; }
+    }catch{}
+    S.midStatus= S.mid.origin==='builtin'?'error':'stale';
+    updateStatus();
+    toast(S.mid.origin==='builtin'?'無法連線取得匯率，暫用內建參考值':'無法更新匯率，使用上次的資料');
+    return false;
+  })().finally(()=>{ midLoading=null; });
+}
+
+/* ============================================================
+ *  資料：臺灣銀行牌告
+ *  1) 本站 data/bot.json（GitHub Actions 自動更新，最穩定）
+ *  2) 透過公開 CORS 代理即時讀取臺銀官網 CSV（備援）
+ *  3) 本機快取
+ * ============================================================ */
+const BOT_CSV='https://rate.bot.com.tw/xrt/flcsv/0/day';
+const PROXIES=[
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
+];
+async function viaProxy(url,validate){
+  for(const p of PROXIES){
+    try{ const t=await (await fetchT(p(url),9000)).text(); if(validate(t)) return t; }catch{}
+  }
+  throw new Error('proxy failed');
+}
+function parseBotCSV(t){
+  const rates={};
+  for(const line of t.replace(/^﻿/,'').split(/\r?\n/)){
+    const c=line.split(','), code=(c[0]||'').trim();
+    if(!/^[A-Z]{3}$/.test(code)) continue;
+    let si=c.findIndex((x,i)=>i>1&&/賣/.test(x)); if(si<0) si=11;
+    rates[code]={cashBuy:num(c[2]),spotBuy:num(c[3]),cashSell:num(c[si+1]),spotSell:num(c[si+2])};
+  }
+  return rates;
+}
+function parseBotHistCSV(t){
+  const out=[];
+  for(const line of t.replace(/^﻿/,'').split(/\r?\n/)){
+    const c=line.split(','), d=(c[0]||'').trim();
+    if(!/^\d{8}$/.test(d)) continue;
+    let si=c.findIndex((x,i)=>i>2&&/賣/.test(x)); if(si<0) si=12;
+    out.push([`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`,num(c[3]),num(c[si+1]),num(c[4]),num(c[si+2])]);
+  }
+  return out.sort((a,b)=>a[0]<b[0]?-1:1);
+}
+function validBot(r){ return !!(r && r.USD && (r.USD.spotSell||r.USD.cashSell) && Object.keys(r).length>=8); }
+const sameBot=(a,b)=>['USD','JPY','EUR','CNY','HKD'].every(c=>a[c]&&b[c]&&a[c].spotSell===b[c].spotSell&&a[c].cashSell===b[c].cashSell);
+function setBot(d){
+  S.bot={...d,origin:'net'};
+  LS.set('fx.bot',{rates:d.rates,updated:d.updated,fetchedAt:d.fetchedAt,via:d.via});
+}
+let botLoading=null;
+function loadBot({live=false}={}){
+  if(botLoading) return botLoading;
+  S.botStatus='loading'; updateStatus();
+  return botLoading=(async()=>{
+    const repoP=fetchRepoJSON('bot.json').then(j=>validBot(j.rates)?{rates:j.rates,updated:Date.parse(j.updated)||null,fetchedAt:Date.now(),via:'臺灣銀行（GitHub Actions 自動同步）'}:null).catch(()=>null);
+    const liveP= live
+      ? viaProxy(BOT_CSV,t=>validBot(parseBotCSV(t))).then(t=>({rates:parseBotCSV(t),updated:null,fetchedAt:Date.now(),via:'臺灣銀行官網（即時讀取）'})).catch(()=>null)
+      : Promise.resolve(null);
+    const repo=await repoP;
+    if(repo && (!S.bot || S.bot.origin==='cache' || (repo.updated||0)>=(S.bot.updated||0))){ setBot(repo); render(); updateStatus(); }
+    const lv=await liveP;
+    if(live) S.botLiveAt=Date.now();
+    if(lv && (!S.bot || !sameBot(S.bot.rates,lv.rates))) setBot(lv);
+    const fresh = (repo && repo.updated && Date.now()-repo.updated<4*864e5) || lv;
+    S.botStatus = fresh ? 'ok' : (S.bot ? 'stale' : 'error');
+    if(!S.bot && S.source==='bot') toast('臺銀牌告暫時無法取得，暫以國際中間價計算',3000);
+    render(); updateStatus();
+  })().finally(()=>{ botLoading=null; });
+}
+
+/* ============================================================
+ *  歷史資料（走勢圖）
+ * ============================================================ */
+const HIST={mem:LS.get('fx.hist',{}),dirty:false,repoP:null};
+function repoMidHist(){ return HIST.repoP ||= fetchRepoJSON('mid-history.json').then(j=>j&&j.codes&&j.days?j:null).catch(()=>null); }
+async function midOn(date){
+  if(HIST.mem[date]) return HIST.mem[date];
+  const rj=await repoMidHist(); let r=null;
+  if(rj && rj.days[date]){ r={usd:1}; rj.codes.forEach((c,i)=>{ const v=rj.days[date][i]; if(v>0) r[c]=v; }); }
+  if(!r){
+    for(const u of [`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.min.json`,`https://${date}.currency-api.pages.dev/v1/currencies/usd.min.json`]){
+      try{ const j=await (await fetchT(u,8000,{cache:'force-cache'})).json(); if(j&&j.usd&&j.usd.twd){ r=trimRates(j.usd); break; } }catch{}
+    }
+  }
+  if(r){ HIST.mem[date]=r; HIST.dirty=true; }
+  return r;
+}
+function saveHist(){
+  if(!HIST.dirty) return;
+  const keys=Object.keys(HIST.mem).sort(); while(keys.length>130) delete HIST.mem[keys.shift()];
+  LS.set('fx.hist',HIST.mem); HIST.dirty=false;
+}
+async function getMidSeries(x,base,days){
+  const end=S.mid.date||isoLocal(new Date()), step=days>45?3:1, dates=[];
+  for(let k=days;k>=1;k-=step) dates.push(addDays(end,-k));
+  const rs=await pool(dates,6,midOn); saveHist();
+  const xl=x.toLowerCase(), bl=base.toLowerCase(), pts=[];
+  dates.forEach((d,i)=>{ const r=rs[i]; if(!r) return; const v=r[bl]/r[xl]; if(v>0&&isFinite(v)) pts.push({d,v}); });
+  const r=S.mid.rates, v=r[bl]/r[xl]; if(v>0&&isFinite(v)) pts.push({d:end,v});
+  return pts;
+}
+const BOTH={mem:{},repoP:null};
+async function getBotHistory(code){
+  if(BOTH.mem[code]) return BOTH.mem[code];
+  BOTH.repoP ||= fetchRepoJSON('bot-history.json').catch(()=>null);
+  const j=await BOTH.repoP; let s=j&&j.series&&j.series[code];
+  const fresh=s&&s.length&&(Date.now()-Date.parse(s[s.length-1][0]+'T00:00:00+08:00'))<5*864e5;
+  if(!fresh){
+    try{ const t=await viaProxy(`https://rate.bot.com.tw/xrt/flcsv/0/L3M/${code}`,t=>parseBotHistCSV(t).length>3); s=parseBotHistCSV(t); }catch{}
+  }
+  if(!s||!s.length) throw new Error('無法取得臺銀歷史牌告');
+  return BOTH.mem[code]=s;
+}
+async function getBotSeries(code,days,type){
+  const s=await getBotHistory(code), idx={cashBuy:1,cashSell:2,spotBuy:3,spotSell:4};
+  const cut=addDays(isoLocal(new Date()),-days);
+  const pick=t=>s.filter(r=>r[0]>=cut&&r[idx[t]]>0).map(r=>({d:r[0],v:r[idx[t]]}));
+  let pts=pick(type); if(pts.length<2) pts=pick(BOT_ALT[type]);
+  return pts;
+}
+
+/* ============================================================
+ *  底部面板（Sheet）
+ * ============================================================ */
+const isOpen=id=>{ const w=document.getElementById(id); return w && !w.hidden && w.classList.contains('open'); };
+function openSheet(id){
+  const w=document.getElementById(id); clearTimeout(w._t); w.hidden=false;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('open')));
+}
+function closeSheet(id){
+  const w=document.getElementById(id); w.classList.remove('open');
+  clearTimeout(w._t); w._t=setTimeout(()=>{ if(!w.classList.contains('open')) w.hidden=true; },330);
+}
+$$('.sheet-wrap').forEach(w=>w.addEventListener('click',e=>{ if(e.target.closest('[data-close]')) closeSheet(w.id); }));
+
+/* ---------- 幣別選擇 ---------- */
+let pkRow=0, pkKb=0;
+function openPicker(i){
+  pkRow=i; pkKb=0;
+  $('#pkTitle').textContent=`更換第 ${i+1} 列 · 目前 ${S.rows[i]}`;
+  $('#pkSearch').value=''; renderPicker(); openSheet('pickerWrap');
+  $('#pkList').scrollTop=0;
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches) setTimeout(()=>$('#pkSearch').focus(),60);
+}
+function pkItem(c){
+  const j=S.rows.indexOf(c.code);
+  const right = j===pkRow ? `<span class="pk-check">${ICON.check}</span>`
+              : j>=0 ? `<span class="badge">第 ${j+1} 列 · 互換</span>` : '';
+  return `<button class="pk-item" data-code="${c.code}"><span class="flag">${flagHTML(c)}</span><span class="pk-code">${c.code}</span>
+    <span class="pk-name">${c.zh} ${c.sym}<small>${c.en}</small></span>${BOT_CODES.has(c.code)?'<span class="badge acc">臺銀</span>':''}${right}</button>`;
+}
+function renderPicker(){
+  const q=$('#pkSearch').value.toLowerCase().replace(/\s+/g,''); let html='';
+  if(!q){
+    html+=`<div class="pk-sec">目前列表</div>`+S.rows.map(c=>pkItem(CUR_MAP[c])).join('');
+    html+=`<div class="pk-sec">全部幣別（${CUR.length}）</div>`+CUR.filter(c=>!S.rows.includes(c.code)).map(pkItem).join('');
+  }else{
+    const qq=q.toUpperCase();
+    const res=CUR.filter(c=>c.search.includes(q)).sort((a,b)=>(b.code===qq)-(a.code===qq)||(b.code.startsWith(qq))-(a.code.startsWith(qq)));
+    html = res.length ? res.map(pkItem).join('') : `<div class="pk-empty">找不到「${$('#pkSearch').value.replace(/[<>&"]/g,'')}」<br>可試試中文名稱、國家或 3 碼代碼</div>`;
+  }
+  html+=`<div class="pk-foot"><button class="link-btn" id="pkReset">恢復預設幣別組合</button></div>`;
+  $('#pkList').innerHTML=html; pkKb=0; markKb();
+}
+function markKb(){ const it=$$('#pkList .pk-item'); it.forEach((b,i)=>b.classList.toggle('kb',i===pkKb && $('#pkSearch').value!=='')); }
+function chooseCurrency(code){
+  const i=pkRow, old=S.rows[i];
+  if(code===old){ closeSheet('pickerWrap'); return; }
+  if(i===S.active) settle();
+  const j=S.rows.indexOf(code);
+  if(j>=0){ S.rows[j]=old; toast(`已將 ${code} 與 ${old} 互換位置`); }
+  S.rows[i]=code; LS.set('fx.rows',S.rows);
+  buildRows(); render(); closeSheet('pickerWrap');
+}
+$('#pkList').addEventListener('click',e=>{
+  if(e.target.closest('#pkReset')){ S.rows=[...CONFIG.defaultRows]; LS.set('fx.rows',S.rows); S.expr=''; buildRows(); render(); closeSheet('pickerWrap'); toast('已恢復預設幣別'); return; }
+  const b=e.target.closest('.pk-item'); if(b) chooseCurrency(b.dataset.code);
+});
+$('#pkSearch').addEventListener('input',renderPicker);
+$('#pkSearch').addEventListener('keydown',e=>{
+  const it=$$('#pkList .pk-item');
+  if(e.key==='ArrowDown'){ e.preventDefault(); pkKb=Math.min(it.length-1,pkKb+1); markKb(); it[pkKb]&&it[pkKb].scrollIntoView({block:'nearest'}); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); pkKb=Math.max(0,pkKb-1); markKb(); it[pkKb]&&it[pkKb].scrollIntoView({block:'nearest'}); }
+  else if(e.key==='Enter'){ e.preventDefault(); if(it[pkKb]) chooseCurrency(it[pkKb].dataset.code); }
+});
+
+/* ---------- 匯率詳情 ---------- */
+const D={code:null,base:null,range:30,series:'mid',token:0,pts:null};
+function defaultBase(x){ const a=S.rows[S.active]; if(a!==x) return a; return x==='TWD'?'USD':'TWD'; }
+const botSeriesOK=()=>D.base==='TWD'&&BOT_CODES.has(D.code);
+function openDetail(code){
+  D.code=code; D.base=defaultBase(code);
+  D.series = S.source==='bot'&&botSeriesOK() ? 'bot' : 'mid';
+  const c=CUR_MAP[code];
+  $('#dHead').innerHTML=`<span class="flag">${flagHTML(c)}</span><div class="d-title"><b id="dTitle">${code}</b><span>${c.zh} ${c.sym} · ${c.en}</span></div><button class="icon-btn" data-close aria-label="關閉">${ICON.close}</button>`;
+  $('#dBody').innerHTML=`<div id="dInfo"></div>
+    <div class="card"><div class="card-h"><span>近期匯率走勢</span><small id="dSrc"></small></div>
+      <div class="ctrl">
+        <div class="seg small" id="dRange"><button data-r="7">近 7 天</button><button data-r="30">近 30 天</button><button data-r="90">近 90 天</button></div>
+        <div class="seg small" id="dSeries"><button data-s="mid">國際中間價</button><button data-s="bot"></button></div>
+      </div>
+      <div class="chart" id="dChart"></div>
+      <div id="dStats"></div>
+    </div><div class="d-pad"></div>`;
+  $('#dBody').scrollTop=0;
+  renderDetailInfo(); syncDetailCtrls(); openSheet('detailWrap');
+  loadChart();
+  if(BOT_CODES.has(code) && Date.now()-S.botLiveAt>10*60e3 && (!S.bot || S.source!=='bot')) loadBot({live:!S.bot});
+}
+function syncDetailCtrls(){
+  $$('#dRange button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.r===D.range));
+  const bb=$('#dSeries [data-s="bot"]'); bb.textContent=`臺銀${BOT_TYPES[S.botType]}`;
+  bb.disabled=!botSeriesOK(); bb.title=botSeriesOK()?'':'臺銀走勢僅提供對 TWD 的牌告';
+  if(!botSeriesOK()) D.series='mid';
+  $$('#dSeries button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===D.series));
+}
+function renderDetailInfo(){
+  const box=$('#dInfo'); if(!box) return;
+  const x=D.code, b=D.base, v=rateInfo(x).v/rateInfo(b).v, vm=midTWD(x)/midTWD(b);
+  const lbl=S.source==='bot'?`臺灣銀行 ${BOT_TYPES[S.botType]}`:'國際市場中間價';
+  const diff= S.source==='bot'&&isFinite(vm)&&Math.abs(v/vm-1)>1e-9 ? ` · 與中間價差 ${pct(v/vm-1)}` : '';
+  const bases=[...new Set([...S.rows,'TWD','USD'])].filter(c=>c!==x);
+  box.innerHTML=`
+    <div class="d-quote"><div class="q-main">1 ${x} =<b>${fmtRate(v)}</b>${b}</div>
+      <div class="q-sub">1 ${b} = ${fmtRate(1/v)} ${x} · ${lbl}${diff}</div></div>
+    <div class="chips" id="dBases"><span class="lbl">換算對象</span>${bases.map(c=>`<button class="chip" data-b="${c}" aria-pressed="${c===b}">${c}</button>`).join('')}</div>
+    ${botCardHTML(x)}`;
+}
+function botCardHTML(x){
+  if(x==='TWD') return `<div class="card note">新臺幣是臺銀牌告的計價基準，因此沒有買賣匯率；可在上方選擇其他幣別查看「1 TWD 可換多少外幣」。</div>`;
+  if(!BOT_CODES.has(x)) return `<div class="card note">臺灣銀行未掛牌 ${x}，目前僅提供國際中間價。若需換匯，可洽詢銀行是否提供此幣別或改以美元轉換。</div>`;
+  const b=S.bot&&S.bot.rates&&S.bot.rates[x];
+  if(!b) return `<div class="card note">${S.botStatus==='loading'?'臺銀牌告載入中…':'臺銀牌告暫時無法取得。'}</div>`;
+  const mid=midTWD(x);
+  const cell=k=>{ const v=b[k]; if(!(v>0)) return `<td class="na">不提供</td>`;
+    const sel=S.source==='bot'&&S.botType===k;
+    return `<td class="${sel?'sel':''}"><b>${fmtRate(v)}</b><small>${pct(v/mid-1)}</small></td>`; };
+  const spr=(a,c)=>(b[a]>0&&b[c]>0)?pct((b[c]-b[a])/mid).replace('+',''):'—';
+  const when=S.bot.updated?`掛牌 ${fmtWhen(S.bot.updated)}`:`${fmtWhen(S.bot.fetchedAt)} 取得`;
+  return `<div class="card"><div class="card-h"><span>臺灣銀行牌告（1 ${x} = ? TWD）</span><small>${when}</small></div>
+    <table class="bt"><thead><tr><th></th><th>銀行買入</th><th>銀行賣出</th></tr></thead><tbody>
+      <tr><th>現金</th>${cell('cashBuy')}${cell('cashSell')}</tr>
+      <tr><th>即期</th>${cell('spotBuy')}${cell('spotSell')}</tr></tbody></table>
+    <div class="bt-foot"><span>國際中間價 <b>${fmtRate(mid)}</b></span><span>即期買賣價差 <b>${spr('spotBuy','spotSell')}</b></span><span>現金買賣價差 <b>${spr('cashBuy','cashSell')}</b></span></div>
+    <p class="hint">小字百分比為與國際中間價的差距。拿新臺幣換外幣看「賣出」，把外幣換回新臺幣看「買入」；即期適用帳戶換匯，現金適用實體鈔票。</p></div>`;
+}
+$('#detailWrap').addEventListener('click',e=>{
+  const bb=e.target.closest('#dBases .chip');
+  if(bb){ D.base=bb.dataset.b; renderDetailInfo(); syncDetailCtrls(); loadChart(); return; }
+  const r=e.target.closest('#dRange button');
+  if(r){ D.range=+r.dataset.r; syncDetailCtrls(); loadChart(); return; }
+  const s=e.target.closest('#dSeries button');
+  if(s && !s.disabled){ D.series=s.dataset.s; syncDetailCtrls(); loadChart(); return; }
+  if(e.target.closest('.retry')) loadChart();
+});
+async function loadChart(){
+  const tok=++D.token, box=$('#dChart'), st=$('#dStats');
+  box.innerHTML='<div class="skel"></div>'; st.innerHTML=''; D.pts=null;
+  const isBot=D.series==='bot';
+  $('#dSrc').textContent= isBot?`臺灣銀行 ${BOT_TYPES[S.botType]} · 每日`:'國際中間價 · 每日';
+  try{
+    const pts = isBot ? await getBotSeries(D.code,D.range,S.botType) : await getMidSeries(D.code,D.base,D.range);
+    if(tok!==D.token) return;
+    if(pts.length<2) throw new Error('歷史資料不足');
+    D.pts=pts; drawChart(box,pts); renderStats(st,pts);
+  }catch(err){
+    if(tok!==D.token) return;
+    box.innerHTML=`<div class="chart-msg"><span>${navigator.onLine?'暫時無法取得歷史匯率':'目前離線，無法取得歷史匯率'}</span><button class="retry">重試</button></div>`;
+  }
+}
+function drawChart(box,pts){
+  const W=Math.max(260,box.clientWidth||320), H=box.clientHeight||210, L=4, R=58, T=24, B=24;
+  const vs=pts.map(p=>p.v), n=pts.length;
+  const mn=Math.min(...vs), mx=Math.max(...vs), iMin=vs.indexOf(mn), iMax=vs.indexOf(mx);
+  const span=(mx-mn)||Math.abs(mx)*0.01||1, y0=mn-span*0.18, y1=mx+span*0.18;
+  const X=i=>L+i*(W-L-R)/(n-1), Y=v=>T+(1-(v-y0)/(y1-y0))*(H-T-B);
+  const line=pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join('');
+  const area=`${line}L${X(n-1).toFixed(1)},${H-B}L${X(0).toFixed(1)},${H-B}Z`;
+  const anchor=x=>x<L+44?'start':x>W-R-44?'end':'middle';
+  const ticks=[mx,(mx+mn)/2,mn];
+  const gid='g'+D.token;
+  const mk=(i,lbl,above)=>{ const x=X(i), y=Y(vs[i]);
+    return `<circle cx="${x}" cy="${y}" r="4" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>
+      <text class="mk" x="${x}" y="${above?y-9:y+17}" text-anchor="${anchor(x)}">${lbl} ${fmtRate(vs[i])}</text>`; };
+  const xl=[0,Math.floor((n-1)/2),n-1];
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${D.code} 對 ${D.series==='bot'?'TWD':D.base} 近 ${D.range} 天走勢，最高 ${fmtRate(mx)}，最低 ${fmtRate(mn)}">
+    <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${ticks.map(t=>`<line class="grid" x1="${L}" x2="${W-R+4}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${W-R+10}" y="${Y(t)+3.5}">${fmtRate(t)}</text>`).join('')}
+    <path d="${area}" fill="url(#${gid})"/>
+    <path class="ln" d="${line}"/>
+    ${xl.map((i,k)=>`<text class="ax" x="${X(i)}" y="${H-6}" text-anchor="${k===0?'start':k===2?'end':'middle'}">${md(pts[i].d)}</text>`).join('')}
+    ${iMax!==n-1?mk(iMax,'高',true):''}${iMin!==n-1?mk(iMin,'低',false):''}
+    <circle cx="${X(n-1)}" cy="${Y(vs[n-1])}" r="4.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>
+    <g id="cross" visibility="hidden"><line class="cross" y1="${T-8}" y2="${H-B}"/><circle r="5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/></g>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="hit"/>
+  </svg><div class="tip" hidden></div>`;
+  const svg=$('svg',box), cross=$('#cross',box), tip=$('.tip',box), cl=$('line',cross), cc=$('circle',cross);
+  const show=e=>{
+    const rc=svg.getBoundingClientRect(), px=(e.clientX-rc.left)*(W/rc.width);
+    const i=Math.max(0,Math.min(n-1,Math.round((px-L)/(W-L-R)*(n-1)))), x=X(i), y=Y(vs[i]);
+    cross.setAttribute('visibility','visible'); cl.setAttribute('x1',x); cl.setAttribute('x2',x); cc.setAttribute('cx',x); cc.setAttribute('cy',y);
+    const dt=new Date(pts[i].d+'T00:00:00');
+    tip.hidden=false; tip.innerHTML=`<span>${md(pts[i].d)}（${WD[dt.getDay()]}）</span><b>${fmtRate(vs[i])}</b>`;
+    const tx=x*rc.width/W, tw=tip.offsetWidth;
+    tip.style.left=Math.max(tw/2,Math.min(rc.width-tw/2,tx))+'px';
+    tip.style.top=(y*rc.height/H > 70 ? 0 : rc.height-tip.offsetHeight-26)+'px';
+  };
+  const hide=()=>{ cross.setAttribute('visibility','hidden'); tip.hidden=true; };
+  svg.addEventListener('pointermove',show); svg.addEventListener('pointerdown',show);
+  svg.addEventListener('pointerleave',hide); svg.addEventListener('pointercancel',hide);
+}
+function renderStats(box,pts){
+  const vs=pts.map(p=>p.v), n=vs.length, mn=Math.min(...vs), mx=Math.max(...vs);
+  const avg=vs.reduce((a,b)=>a+b,0)/n, last=vs[n-1], chg=last/vs[0]-1;
+  const pos=mx>mn?(last-mn)/(mx-mn):.5;
+  const x=D.code, base=D.series==='bot'?'TWD':D.base;
+  let where, tip;
+  if(pos<=.25){ where='接近區間<b>低點</b>'; tip=`若要用 ${base} 換 ${x}，目前相對划算；若要把 ${x} 換回 ${base}，可考慮再等等。`; }
+  else if(pos>=.75){ where='接近區間<b>高點</b>'; tip=`若要用 ${base} 換 ${x}，目前價格相對偏貴；若要把 ${x} 換回 ${base}，則相對有利。`; }
+  else { where='位於區間<b>中段</b>'; tip=`目前沒有明顯的高低點優勢，可考慮分批換匯。`; }
+  const dOf=v=>md(pts[vs.indexOf(v)].d);
+  box.innerHTML=`
+    <div class="stats">
+      <div><span>最高</span><b>${fmtRate(mx)}</b><em>${dOf(mx)}</em></div>
+      <div><span>最低</span><b>${fmtRate(mn)}</b><em>${dOf(mn)}</em></div>
+      <div><span>平均</span><b>${fmtRate(avg)}</b><em>${n} 筆</em></div>
+      <div><span>區間變化</span><b class="${chg>0?'up':chg<0?'down':''}">${chg>0?'▲':chg<0?'▼':''} ${Math.abs(chg*100).toFixed(2)}%</b><em>${md(pts[0].d)} 起</em></div>
+    </div>
+    <div class="gauge"><div class="gauge-bar"><i style="left:${(pos*100).toFixed(1)}%"></i></div>
+      <div class="gauge-lbl"><span>區間低 ${fmtRate(mn)}</span><span>目前 ${Math.round(pos*100)}%</span><span>區間高 ${fmtRate(mx)}</span></div></div>
+    <p class="verdict">目前 1 ${x} ≈ ${fmtRate(last)} ${base}，${where}（近 ${D.range} 天）。${tip}</p>
+    <p class="src-note">${D.series==='bot'?'資料：臺灣銀行歷史牌告（每營業日收盤）。':'資料：國際市場中間價（每日），與銀行實際買賣價會有差距。'}僅供參考，不構成投資建議。</p>`;
+}
+let rzT; window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(isOpen('detailWrap')&&D.pts){ drawChart($('#dChart'),D.pts); } },150); });
+
+/* ============================================================
+ *  控制列：資料來源、匯率種類、主題
+ * ============================================================ */
+function syncSourceUI(){
+  $$('#srcSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.src===S.source));
+  $$('#typeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.type===S.botType));
+  $('#typeBar').hidden=S.source!=='bot';
+}
+$('#srcSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||b.dataset.src===S.source) return;
+  S.source=b.dataset.src; LS.set('fx.source',S.source); syncSourceUI(); render(); updateStatus();
+  if(S.source==='bot' && Date.now()-S.botLiveAt>5*60e3) loadBot({live:true});
+});
+$('#typeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  S.botType=b.dataset.type; LS.set('fx.botType',S.botType); syncSourceUI(); render(); updateStatus();
+  if(isOpen('detailWrap')){ syncDetailCtrls(); if(D.series==='bot') loadChart(); }
+});
+const mq=matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(){
+  const t=S.theme==='auto'?(mq.matches?'dark':'light'):S.theme;
+  document.documentElement.dataset.theme=t;
+  $('meta[name="theme-color"]').content=t==='dark'?'#000000':'#f5f5f7';
+  $('#themeBtn').innerHTML=ICON[S.theme==='auto'?'auto':S.theme==='dark'?'moon':'sun'];
+  $('#themeBtn').title={auto:'外觀：跟隨系統',dark:'外觀：深色',light:'外觀：淺色'}[S.theme];
+  if(isOpen('detailWrap')&&D.pts) drawChart($('#dChart'),D.pts);
+}
+mq.addEventListener&&mq.addEventListener('change',applyTheme);
+$('#themeBtn').addEventListener('click',()=>{
+  S.theme={auto:'dark',dark:'light',light:'auto'}[S.theme]; LS.set('fx.theme',S.theme); applyTheme();
+  toast({auto:'外觀：跟隨系統',dark:'外觀：深色模式',light:'外觀：淺色模式'}[S.theme],1400);
+});
+
+/* ============================================================
+ *  計算機鍵盤（觸控 + 實體鍵盤）
+ * ============================================================ */
+$('[data-k="back"]').innerHTML=ICON.back;
+(function(){
+  let lpT=null;
+  const kp=$('#keypad');
+  kp.addEventListener('pointerdown',e=>{
+    const b=e.target.closest('.key'); if(!b) return;
+    e.preventDefault(); b.classList.add('pressed');
+    const k=b.dataset.k; press(k);
+    if(k==='back'){ clearTimeout(lpT); lpT=setTimeout(()=>{ press('clear'); haptic(); toast('已清除',1000); },550); }
+  });
+  const up=e=>{ clearTimeout(lpT); $$('.key.pressed').forEach(b=>b.classList.remove('pressed')); };
+  kp.addEventListener('pointerup',up); kp.addEventListener('pointerleave',up); kp.addEventListener('pointercancel',up);
+  kp.addEventListener('contextmenu',e=>e.preventDefault());
+})();
+function flashKey(k){ const b=$(`.key[data-k="${k==='clear'?'back':k}"]`); if(!b) return; b.classList.add('pressed'); setTimeout(()=>b.classList.remove('pressed'),110); }
+$('#eqPill').addEventListener('click',()=>press('='));
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const open=$('.sheet-wrap.open');
+  if(e.key==='Escape'){ if(open) closeSheet(open.id); else if(S.expr){ press('clear'); flashKey('clear'); } e.preventDefault(); return; }
+  if(open || e.target.matches('input,textarea')) return;
+  const map={'*':'*','x':'*','X':'*','×':'*','/':'/','÷':'/','+':'+','-':'-',',':'.','.':'.','Enter':'=','=':'=','Backspace':'back','Delete':'clear'};
+  const k=/^\d$/.test(e.key)?e.key:map[e.key];
+  if(k){ e.preventDefault(); press(k); flashKey(k); return; }
+  const n=S.rows.length;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'||e.key==='Tab'){ e.preventDefault(); focusRow((S.active+((e.key==='ArrowUp'||(e.key==='Tab'&&e.shiftKey))?-1:1)+n)%n); return; }
+  if(e.key==='ArrowRight'){ e.preventDefault(); openPicker(S.active); return; }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); openDetail(S.rows[S.active]); return; }
+});
+
+/* ============================================================
+ *  銀行連結
+ * ============================================================ */
+$('#bankGrid').innerHTML=CONFIG.banks.map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${n}${ICON.ext}</a>`).join('');
+$('#bankToggle').insertAdjacentHTML('beforeend',ICON.chev);
+(function(){
+  const desk=matchMedia('(min-width:760px) and (min-height:960px)').matches;
+  const open=LS.get('fx.banksOpen',desk);
+  $('#banks').classList.toggle('open',open); $('#bankToggle').setAttribute('aria-expanded',open);
+  $('#bankToggle').addEventListener('click',()=>{ const o=!$('#banks').classList.contains('open'); $('#banks').classList.toggle('open',o); $('#bankToggle').setAttribute('aria-expanded',o); LS.set('fx.banksOpen',o); });
+})();
+
+/* ============================================================
+ *  啟動與自動更新
+ * ============================================================ */
+$('#refreshBtn').innerHTML=ICON.refresh;
+$('#pkIcon').outerHTML=ICON.search;
+$$('.sheet-h [data-close]').forEach(b=>b.innerHTML=ICON.close);
+$('#refreshBtn').addEventListener('click',()=>{ loadMid(); loadBot({live:S.source==='bot'}); });
+
+function autoRefresh(){
+  const now=Date.now();
+  if(now-(S.mid.fetchedAt||0)>30*60e3) loadMid();
+  if(S.source==='bot' && now-S.botLiveAt>10*60e3) loadBot({live:true});
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') autoRefresh(); });
+setInterval(()=>{ if(document.visibilityState==='visible') autoRefresh(); },60e3);
+window.addEventListener('online',()=>{ toast('已恢復連線，更新匯率中…'); loadMid(); loadBot({live:S.source==='bot'}); });
+window.addEventListener('offline',()=>{ toast('目前離線，將使用上次的匯率'); if(S.midStatus==='ok') S.midStatus='stale'; if(S.bot&&S.botStatus==='ok') S.botStatus='stale'; updateStatus(); });
+
+applyTheme(); syncSourceUI(); buildRows(); render(); updateStatus();
+loadMid();
+loadBot({live:S.source==='bot'});
+</script>
+</body>
+</html>
