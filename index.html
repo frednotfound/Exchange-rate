@@ -154,6 +154,9 @@ html[data-density="compact"]{--row-h:56px}
 
 /* ---------- Keypad ---------- */
 .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 12px calc(6px + env(safe-area-inset-bottom))}
+/* iOS 主畫面 App 的系統錯誤：網頁區域被系統縮短、底部由系統另外畫一條，
+   此時網頁其實碰不到 Home 指示條，不需要再留 safe-area 底部空白 */
+html.ios-gap .keypad{padding-bottom:10px}
 .key{height:clamp(40px,5.7dvh,56px);border-radius:14px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
   transition:background .12s,transform .08s;touch-action:manipulation}
 html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
@@ -1420,6 +1423,18 @@ window.addEventListener('offline',()=>{ toast('目前離線，將使用上次的
 /* 加入主畫面（Home Screen Web App）：離線也能開啟 */
 const STANDALONE = navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
 document.documentElement.classList.toggle('standalone',STANDALONE);
+/* 偵測 iOS「網頁高度比螢幕短」的錯誤（WebKit bug 301994）：例如螢幕 874、網頁只有 812 */
+function detectIOSGap(){
+  const portrait=innerHeight>=innerWidth;
+  const sh=portrait?Math.max(screen.width,screen.height):Math.min(screen.width,screen.height);
+  const isIOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const gap=STANDALONE && isIOS && (sh-innerHeight)>20;
+  document.documentElement.classList.toggle('ios-gap',gap);
+  return gap;
+}
+detectIOSGap();
+window.addEventListener('resize',detectIOSGap);
+window.addEventListener('orientationchange',()=>setTimeout(detectIOSGap,300));
 if('serviceWorker' in navigator && location.protocol==='https:'){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
@@ -1433,6 +1448,8 @@ function diagText(){
   return [
     `iOS 版本：${ios}`,
     `主畫面 App 模式：${STANDALONE?'是':'否'}`,
+    `iOS 高度錯誤補償：${document.documentElement.classList.contains('ios-gap')?'已啟用':'未啟用'}`,
+    `計算機底部留白：${Math.round(parseFloat(getComputedStyle($('#keypad')).paddingBottom))}`,
     `螢幕 screen：${screen.width} × ${screen.height}`,
     `可用 innerWidth × innerHeight：${innerWidth} × ${innerHeight}`,
     `visualViewport：${vv?Math.round(vv.width)+' × '+Math.round(vv.height)+'（offsetTop '+Math.round(vv.offsetTop)+'）':'—'}`,
