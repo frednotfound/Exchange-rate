@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://flagcdn.com">
 <script>
   /* 先套用主題，避免閃爍 */
-  (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}})();
+  (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;document.documentElement.dataset.density=JSON.parse(localStorage.getItem('fx.density')||'"roomy"');}catch(e){}})();
 </script>
 <style>
 :root{
@@ -61,7 +61,7 @@ svg{display:block}
   #app{max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
 }
 
-.topbar{display:flex;align-items:center;gap:8px;padding:10px 12px 6px 14px}
+.topbar{display:flex;align-items:center;gap:8px;padding:8px 12px 4px 14px}
 .seg{display:flex;flex:1;background:var(--seg-bg);border-radius:11px;padding:3px;gap:2px}
 .seg button{flex:1;height:32px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:background .2s,color .2s;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
@@ -77,7 +77,11 @@ svg{display:block}
 #list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none;overscroll-behavior:contain}
 #rows{flex:1 0 auto;display:flex;flex-direction:column}
 #list::-webkit-scrollbar{display:none}
-.row{position:relative;flex:1 0 56px;max-height:88px;overflow:hidden;cursor:pointer;outline:none}
+/* 列表間距：緊湊 / 標準 / 寬鬆 */
+:root{--row-h:72px}
+html[data-density="normal"]{--row-h:61px}
+html[data-density="compact"]{--row-h:56px}
+.row{position:relative;flex:1 0 var(--row-h);max-height:calc(var(--row-h) + 24px);overflow:hidden;cursor:pointer;outline:none}
 /* 分隔線（對齊幣別代碼，滑動時不跟著移動） */
 .row::after{content:"";position:absolute;left:64px;right:18px;bottom:0;height:1px;background:var(--line);z-index:3;pointer-events:none}
 .row.active::after,.row:has(+ .row.active)::after{opacity:0}
@@ -132,7 +136,7 @@ svg{display:block}
 }
 
 /* ---------- Status ---------- */
-.status{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 16px;font-size:12px;color:var(--text2);border-top:1px solid var(--line);min-height:36px}
+.status{display:flex;align-items:center;gap:8px;padding:2px 10px 2px 16px;font-size:12px;color:var(--text2);border-top:1px solid var(--line);min-height:32px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex:none}
 .dot.ok{background:var(--good)} .dot.stale{background:var(--warn)} .dot.error{background:var(--bad)}
 .dot.loading{background:var(--text2);animation:pulse 1s ease-in-out infinite}
@@ -146,8 +150,8 @@ svg{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ---------- Keypad ---------- */
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:6px 12px calc(8px + env(safe-area-inset-bottom))}
-.key{height:clamp(42px,6.2dvh,58px);border-radius:16px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 12px calc(6px + env(safe-area-inset-bottom))}
+.key{height:clamp(40px,5.7dvh,56px);border-radius:14px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
   transition:background .12s,transform .08s;touch-action:manipulation}
 html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .key.op{color:var(--accent-text);background:var(--key-hi);font-size:28px}
@@ -196,6 +200,8 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .h-keys td{padding:4px 12px 4px 0}
 kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--key-hi);border:1px solid var(--line);color:var(--text)}
 .h-foot{margin-top:18px;font-size:12px;color:var(--text2)}
+.h-note{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
+#densitySeg{max-width:300px}
 
 /* ---------- Toast ---------- */
 #toast{position:absolute;left:50%;bottom:calc(46% + 10px);transform:translate(-50%,8px);background:var(--tip);color:var(--text);padding:9px 14px;border-radius:12px;font-size:13px;
@@ -385,6 +391,12 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
         <div class="h-row"><span class="h-l">更換幣別</span><span class="h-fg"><i></i><b>JPY</b><em>4.8043</em></span><span class="h-r">匯率走勢</span></div>
       </div>
       <button class="h-play" id="helpDemo">在列表上示範一次滑動手勢</button>
+
+      <h3>列表間距</h3>
+      <div class="seg small" id="densitySeg" role="group" aria-label="列表間距">
+        <button data-den="compact">緊湊</button><button data-den="normal">標準</button><button data-den="roomy">寬鬆</button>
+      </div>
+      <p class="h-note">「寬鬆」最好閱讀，但手機上 7 個幣別可能需要稍微上下捲動；「標準」或「緊湊」大多可一次看完全部。</p>
 
       <h3>換算</h3>
       <ul>
@@ -1396,6 +1408,15 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 setInterval(()=>{ updateStatus(); if(document.visibilityState==='visible') autoRefresh(); },60e3);
 window.addEventListener('online',()=>{ toast('已恢復連線，更新匯率中…'); loadMid(); loadBot({live:S.source==='bot'}); });
 window.addEventListener('offline',()=>{ toast('目前離線，將使用上次的匯率'); if(S.midStatus==='ok') S.midStatus='stale'; if(S.bot&&S.botStatus==='ok') S.botStatus='stale'; updateStatus(); });
+
+/* 列表間距設定 */
+function applyDensity(d){
+  if(!['compact','normal','roomy'].includes(d)) d='roomy';
+  document.documentElement.dataset.density=d; LS.set('fx.density',d);
+  $$('#densitySeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.den===d));
+}
+$('#densitySeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) applyDensity(b.dataset.den); });
+applyDensity(LS.get('fx.density','roomy'));
 
 applyTheme(); syncSourceUI(); buildRows(); render(); updateStatus();
 loadMid();
