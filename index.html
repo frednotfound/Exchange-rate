@@ -101,8 +101,14 @@ svg{display:block}
 .row.placeholder .val{color:var(--text3)}
 @keyframes blink{50%{opacity:0}}
 .sub{font-size:12.5px;color:var(--text2);display:flex;gap:6px;align-items:center;white-space:nowrap;max-width:100%;overflow:hidden}
-.res{color:var(--accent-text);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
-.res:empty{display:none}
+/* 算式（計算中時顯示在大數字下方的小字） */
+.expr{display:none;flex:0 1 auto;min-width:0;justify-content:flex-end;align-items:center;overflow:hidden;color:var(--text2);
+  font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.expr .ex{flex:none}
+.expr .caret{height:1.05em;width:1.5px;margin-left:2px;flex:none}
+.row.calc .expr{display:flex}
+.row.calc .nm{display:none}
+.row.calc .amt .caret{display:none!important}
 .tag{font-size:10.5px;line-height:1;padding:3px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);flex:none}
 .acts{display:none}
 @media (hover:hover) and (pointer:fine){
@@ -449,6 +455,9 @@ function fmtWhen(ms){
   return (same?'今天 ':`${d.getMonth()+1}/${d.getDate()} `)+`${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 const hhmm = ms=>{ const d=new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+/* 今天只顯示 時:分，其他日期顯示 月/日 時:分 */
+const fmtShort = ms=>{ const d=new Date(ms); return d.toDateString()===new Date().toDateString() ? hhmm(ms) : `${d.getMonth()+1}/${d.getDate()} ${hhmm(ms)}`; };
+const fmtFull = ms=>{ const d=new Date(ms); return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${hhmm(ms)}`; };
 const num = x=>{ const v=parseFloat(x); return v>0?v:null; };
 const nf = (v,d)=>v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 
@@ -632,10 +641,10 @@ function buildRows(){
         </span>
         <span class="amt-wrap">
           <span class="amt"><span class="val"></span><span class="caret"></span></span>
-          <span class="sub"><span class="res"></span><span class="tag" hidden></span><span class="nm">${c.zh} ${c.sym}</span></span>
+          <span class="sub"><span class="tag" hidden></span><span class="expr"><span class="ex"></span><i class="caret"></i></span><span class="nm">${c.zh} ${c.sym}</span></span>
         </span>
       </div>`;
-    el._val=$('.val',el); el._amt=$('.amt',el); el._res=$('.res',el); el._tag=$('.tag',el);
+    el._val=$('.val',el); el._amt=$('.amt',el); el._ex=$('.ex',el); el._tag=$('.tag',el);
     attachRow(el);
     list.appendChild(el);
   });
@@ -648,24 +657,28 @@ function render(){
   const from=S.rows[S.active];
   $$('.row').forEach((el,i)=>{
     const code=S.rows[i], active=i===S.active, info=rateInfo(code);
+    const calc = active && typed && hasOp(S.expr);
     el.classList.toggle('active',active);
     el.classList.toggle('placeholder',active&&!typed);
-    let txt, res='';
-    if(active){
+    el.classList.toggle('calc',calc);
+    let txt, ex='';
+    if(calc){                       // 計算中：大字顯示結果，小字顯示算式
+      txt = fmtAmount(amt,code);
+      ex  = fmtExpr(S.expr);
+    }else if(active){
       txt = typed ? fmtExpr(S.expr) : '1';
-      if(typed && hasOp(S.expr)) res='= '+fmtAmount(amt,code);
     }else{
       const v=convert(amt,from,code);
       txt = typed ? fmtAmount(v,code) : fmtRate(v);
     }
     if(el._val.textContent!==txt) el._val.textContent=txt;
-    el._res.textContent=res;
+    if(el._ex.textContent!==ex) el._ex.textContent=ex;
     el._amt.style.setProperty('--fs',fitSize(txt.length)+'px');
     el._tag.hidden=!info.tag; el._tag.textContent=info.tag;
   });
   const pill=$('#eqPill');
-  if(typed && hasOp(S.expr)){ pill.hidden=false; pill.textContent='= '+fmtAmount(amt,from); }
-  else pill.hidden=true;
+  pill.hidden=!(typed && hasOp(S.expr));
+  pill.textContent='＝ 結算';
   if(isOpen('detailWrap')) renderDetailInfo();
 }
 function focusRow(i){
@@ -726,19 +739,24 @@ function updateStatus(){
   const loading = S.midStatus==='loading' || S.botStatus==='loading';
   $('#refreshBtn').classList.toggle('spin',loading);
   if(S.source==='mid'){
-    const m=S.mid, when = m.updatedAt?fmtWhen(m.updatedAt):md(m.date);
-    title=`來源：${m.via||''}${m.fetchedAt?`，取得於 ${fmtWhen(m.fetchedAt)}`:''}`;
-    if(m.origin==='builtin'){ cls=S.midStatus==='loading'?'loading':'error'; text= S.midStatus==='loading'?'國際市場中間價 · 連線中…':`無法連線 · 使用內建參考匯率（${md(m.date)}）`; }
-    else if(S.midStatus==='stale'){ cls='stale'; text=`離線 · 國際市場中間價（上次 ${when}）`; }
-    else { cls=S.midStatus==='loading'?'loading':'ok'; text=`國際市場中間價 · ${when} 更新`; }
+    const m=S.mid;
+    // 資料時間：有精確時間就顯示時間；只有日期的來源標示「每日價」
+    const dataT = m.updatedAt ? `${fmtShort(m.updatedAt)} 報價` : `${md(m.date)} 每日價`;
+    const syncT = m.fetchedAt ? ` · ${fmtShort(m.fetchedAt)} 同步` : '';
+    title=`來源：${m.via||''}\n資料時間：${m.updatedAt?fmtFull(m.updatedAt):m.date+'（此來源每日更新一次，只提供日期）'}${m.fetchedAt?`\n最後同步：${fmtFull(m.fetchedAt)}`:''}`;
+    if(m.origin==='builtin'){ cls=S.midStatus==='loading'?'loading':'error'; text= S.midStatus==='loading'?'國際中間價 · 連線中…':`無法連線 · 內建參考匯率（${md(m.date)}）`; }
+    else if(S.midStatus==='stale'){ cls='stale'; text=`離線 · 國際中間價 ${dataT}${syncT}`; }
+    else { cls=S.midStatus==='loading'?'loading':'ok'; text=`國際中間價 · ${dataT}${syncT}`; }
   }else{
     const b=S.bot, tp=BOT_TYPES[S.botType];
     if(!b){ cls=S.botStatus==='loading'?'loading':'error'; text= S.botStatus==='loading'?'臺灣銀行牌告 · 載入中…':'臺銀牌告暫時無法取得 · 暫以國際中間價計算'; }
     else{
-      const when = b.updated?`掛牌 ${fmtWhen(b.updated)}`:`${fmtWhen(b.fetchedAt)} 取得`;
-      title=`來源：${b.via||'臺灣銀行'}${b.fetchedAt?`，取得於 ${fmtWhen(b.fetchedAt)}`:''}`;
-      if(S.botStatus==='stale'){ cls='stale'; text=`離線 · 臺灣銀行 ${tp}（${when}）`; }
-      else { cls=S.botStatus==='loading'?'loading':'ok'; text=`臺灣銀行 · ${tp} · ${when}`; }
+      const listT = b.updated ? `掛牌 ${fmtShort(b.updated)}` : '';
+      const syncT = b.fetchedAt ? `${fmtShort(b.fetchedAt)} 同步` : '';
+      const when = [listT,syncT].filter(Boolean).join(' · ');
+      title=`來源：${b.via||'臺灣銀行'}${b.updated?`\n臺銀掛牌時間：${fmtFull(b.updated)}`:''}${b.fetchedAt?`\n最後同步：${fmtFull(b.fetchedAt)}`:''}`;
+      if(S.botStatus==='stale'){ cls='stale'; text=`離線 · 臺銀${tp} · ${when}`; }
+      else { cls=S.botStatus==='loading'?'loading':'ok'; text=`臺銀${tp} · ${when}`; }
     }
   }
   dot.className='dot '+cls; txt.textContent=text; txt.title=title;
@@ -750,6 +768,11 @@ function updateStatus(){
  * ============================================================ */
 const fawaz = j=>({rates:j.usd,date:j.date,updatedAt:null});
 const MID_PROVIDERS = [
+  // 約每 5 分鐘更新，附精確報價時間 ts
+  {name:'MoneyConvert', url:'https://cdn.moneyconvert.net/api/latest.json', parse:j=>{
+    const rates={}; for(const k in j.rates) rates[k.toLowerCase()]=+j.rates[k];
+    const t=Date.parse(j.ts); return {rates,date:new Date(t||Date.now()).toISOString().slice(0,10),updatedAt:t||null};
+  }},
   {name:'jsDelivr · fawazahmed0/currency-api', url:'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json', parse:fawaz},
   {name:'Cloudflare · fawazahmed0/currency-api', url:'https://latest.currency-api.pages.dev/v1/currencies/usd.min.json', parse:fawaz},
   {name:'ExchangeRate-API (open.er-api.com)', url:'https://open.er-api.com/v6/latest/USD', parse:j=>{
@@ -786,11 +809,18 @@ function loadMid(){
   if(midLoading) return midLoading;
   S.midStatus='loading'; updateStatus();
   return midLoading=(async()=>{
-    for(const p of MID_PROVIDERS){
-      try{
-        const j=await (await fetchT(p.url,7000)).json(); const d=p.parse(j);
-        if(validMid(d.rates)){ setMid({...d,rates:trimRates(d.rates),fetchedAt:Date.now(),via:p.name}); return true; }
-      }catch{}
+    // 同時向所有來源取價，排除明顯異常值後，採用「報價時間最新」的那一個
+    const got=(await Promise.all(MID_PROVIDERS.map(async p=>{
+      try{ const d=p.parse(await (await fetchT(p.url,7000)).json()); return validMid(d.rates)?{...d,via:p.name}:null; }catch{ return null; }
+    }))).filter(Boolean);
+    if(got.length){
+      const tw=got.map(d=>d.rates.twd).sort((a,b)=>a-b), med=tw[Math.floor((tw.length-1)/2)];
+      const sane=got.filter(d=>got.length<3||Math.abs(d.rates.twd/med-1)<0.03);
+      const rank=d=>d.updatedAt||Date.parse(d.date+'T00:00:00Z')||0;
+      sane.sort((a,b)=>rank(b)-rank(a)||(!!b.updatedAt-!!a.updatedAt));
+      const d=sane[0];
+      setMid({...d,rates:trimRates(d.rates),fetchedAt:Date.now()});
+      return true;
     }
     try{
       const j=await fetchRepoJSON('mid.json');
@@ -810,6 +840,15 @@ function loadMid(){
  *  3) 本機快取
  * ============================================================ */
 const BOT_CSV='https://rate.bot.com.tw/xrt/flcsv/0/day';
+const BOT_PAGE='https://rate.bot.com.tw/xrt?Lang=zh-TW';
+/* 從臺銀牌告網頁找出「牌價最新掛牌時間：2026/11/26 16:00」 */
+function parseBotTime(html){
+  const i=html.indexOf('掛牌時間'); if(i<0) return null;
+  const m=/(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/.exec(html.slice(i,i+400).replace(/<[^>]*>/g,' '));
+  if(!m) return null;
+  const t=Date.parse(`${m[1]}-${pad(m[2])}-${pad(m[3])}T${pad(m[4])}:${m[5]}:00+08:00`);
+  return t>0?t:null;
+}
 const PROXIES=[
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
@@ -849,23 +888,28 @@ function setBot(d){
 }
 let botLoading=null;
 function loadBot({live=false}={}){
-  if(botLoading) return botLoading;
+  if(botLoading){ return live && !botLoading.live ? botLoading.then(()=>loadBot({live:true})) : botLoading; }
   S.botStatus='loading'; updateStatus();
-  return botLoading=(async()=>{
+  botLoading=(async()=>{
     const repoP=fetchRepoJSON('bot.json').then(j=>validBot(j.rates)?{rates:j.rates,updated:Date.parse(j.updated)||null,fetchedAt:Date.now(),via:'臺灣銀行（GitHub Actions 自動同步）'}:null).catch(()=>null);
+    // 即時讀取：CSV 取匯率，同時讀網頁取得「牌價最新掛牌時間」
+    const timeP= live ? viaProxy(BOT_PAGE,t=>!!parseBotTime(t)).then(parseBotTime).catch(()=>null) : null;
     const liveP= live
-      ? viaProxy(BOT_CSV,t=>validBot(parseBotCSV(t))).then(t=>({rates:parseBotCSV(t),updated:null,fetchedAt:Date.now(),via:'臺灣銀行官網（即時讀取）'})).catch(()=>null)
+      ? viaProxy(BOT_CSV,t=>validBot(parseBotCSV(t))).then(async t=>({rates:parseBotCSV(t),updated:await Promise.race([timeP,new Promise(r=>setTimeout(()=>r(null),5000))]),fetchedAt:Date.now(),via:'臺灣銀行官網（即時讀取）'})).catch(()=>null)
       : Promise.resolve(null);
     const repo=await repoP;
     if(repo && (!S.bot || S.bot.origin==='cache' || (repo.updated||0)>=(S.bot.updated||0))){ setBot(repo); render(); updateStatus(); }
     const lv=await liveP;
     if(live) S.botLiveAt=Date.now();
     if(lv && (!S.bot || !sameBot(S.bot.rates,lv.rates))) setBot(lv);
+    else if(lv && S.bot){ S.bot.fetchedAt=lv.fetchedAt; if(lv.updated && lv.updated>(S.bot.updated||0)) S.bot.updated=lv.updated; setBot(S.bot); }
     const fresh = (repo && repo.updated && Date.now()-repo.updated<4*864e5) || lv;
     S.botStatus = fresh ? 'ok' : (S.bot ? 'stale' : 'error');
     if(!S.bot && S.source==='bot') toast('臺銀牌告暫時無法取得，暫以國際中間價計算',3000);
     render(); updateStatus();
   })().finally(()=>{ botLoading=null; });
+  botLoading.live=live;
+  return botLoading;
 }
 
 /* ============================================================
@@ -1221,11 +1265,11 @@ $('#refreshBtn').addEventListener('click',()=>{ loadMid(); loadBot({live:S.sourc
 
 function autoRefresh(){
   const now=Date.now();
-  if(now-(S.mid.fetchedAt||0)>30*60e3) loadMid();
+  if(now-(S.mid.fetchedAt||0)>5*60e3) loadMid();
   if(S.source==='bot' && now-S.botLiveAt>10*60e3) loadBot({live:true});
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') autoRefresh(); });
-setInterval(()=>{ if(document.visibilityState==='visible') autoRefresh(); },60e3);
+setInterval(()=>{ updateStatus(); if(document.visibilityState==='visible') autoRefresh(); },60e3);
 window.addEventListener('online',()=>{ toast('已恢復連線，更新匯率中…'); loadMid(); loadBot({live:S.source==='bot'}); });
 window.addEventListener('offline',()=>{ toast('目前離線，將使用上次的匯率'); if(S.midStatus==='ok') S.midStatus='stale'; if(S.bot&&S.botStatus==='ok') S.botStatus='stale'; updateStatus(); });
 
