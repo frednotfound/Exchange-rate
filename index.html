@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>匯率換算｜即時多幣別</title>
 <meta name="description" content="極簡即時多幣別匯率換算：國際中間價與臺灣銀行牌告匯率、內建計算機、匯率走勢圖。">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="匯率">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000'/%3E%3Cpath d='M18 24h26l-7-7M46 40H20l7 7' fill='none' stroke='%23ff9f0a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Cpath d='M18 24h26l-7-7M46 40H20l7 7' fill='none' stroke='%23ff9f0a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://flagcdn.com">
 <script>
@@ -47,18 +49,19 @@ html[data-theme="light"]{
   --shadow:0 30px 80px rgba(0,0,0,.18);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--desk);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+html,body{height:100%;overflow:hidden;background:var(--app);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 body{display:flex;justify-content:center}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 svg{display:block}
 [hidden]{display:none!important}
 
 /* ---------- App shell ---------- */
-#app{width:100%;max-width:560px;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--app);
-  padding-top:env(safe-area-inset-top);touch-action:manipulation;user-select:none;-webkit-user-select:none;position:relative}
+#app{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:560px;display:flex;flex-direction:column;background:var(--app);
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 @media (min-width:760px) and (min-height:680px){
+  html,body{background:var(--desk)}
   body{align-items:center;padding:24px}
-  #app{max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
+  #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;margin:0;max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
 }
 
 .topbar{display:flex;align-items:center;gap:8px;padding:8px 12px 4px 14px}
@@ -1307,7 +1310,7 @@ const mq=matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(){
   const t=S.theme==='auto'?(mq.matches?'dark':'light'):S.theme;
   document.documentElement.dataset.theme=t;
-  $('meta[name="theme-color"]').content=t==='dark'?'#000000':'#f5f5f7';
+  $$('meta[name="theme-color"]').forEach(m=>{ m.content=t==='dark'?'#000000':'#f5f5f7'; m.removeAttribute('media'); });
   $('#themeBtn').innerHTML=ICON[S.theme==='auto'?'auto':S.theme==='dark'?'moon':'sun'];
   $('#themeBtn').title={auto:'外觀：跟隨系統',dark:'外觀：深色',light:'外觀：淺色'}[S.theme];
   if(isOpen('detailWrap')&&D.pts) drawChart($('#dChart'),D.pts);
@@ -1408,6 +1411,13 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 setInterval(()=>{ updateStatus(); if(document.visibilityState==='visible') autoRefresh(); },60e3);
 window.addEventListener('online',()=>{ toast('已恢復連線，更新匯率中…'); loadMid(); loadBot({live:S.source==='bot'}); });
 window.addEventListener('offline',()=>{ toast('目前離線，將使用上次的匯率'); if(S.midStatus==='ok') S.midStatus='stale'; if(S.bot&&S.botStatus==='ok') S.botStatus='stale'; updateStatus(); });
+
+/* 加入主畫面（Home Screen Web App）：離線也能開啟 */
+const STANDALONE = navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
+document.documentElement.classList.toggle('standalone',STANDALONE);
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 
 /* 列表間距設定 */
 function applyDensity(d){
