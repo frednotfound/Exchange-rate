@@ -1,6 +1,6 @@
 {
   "name": "匯率換算｜即時多幣別",
-  "short_name": "匯率",
+  "short_name": "即時匯率",
   "description": "極簡即時多幣別匯率換算：國際中間價與臺灣銀行牌告、內建計算機、匯率走勢圖。",
   "lang": "zh-Hant-TW",
   "start_url": "./",
