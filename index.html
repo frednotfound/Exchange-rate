@@ -21,10 +21,20 @@
   (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;document.documentElement.dataset.density=JSON.parse(localStorage.getItem('fx.density')||'"roomy"');}catch(e){}})();
 </script>
 <style>
+/* Hallmark · checked: 2026-11-27 · genre: modern-minimal (inferred) · shape: app screen
+ * floor: 0 FAIL · fixed: 13 (4, 16, 18, 26a, 26b, 27, 30a, 34, 39b, 40, 48, 63, 75) · structural: none printed
+ * finish-review: in-thread · 1 finding · 1 resolved (detail toggles wrap at phone width)
+ * built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · answered F3 · sheet heads are one line with an ellipsis and cannot wrap */
+/* Hallmark · dismissed F24 · the desktop frame takes a hairline in dark and a shadow in light, never both, through --frame-line and --shadow */
 :root{
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   --num:"SF Pro Display",-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,Menlo,monospace;
   --ease:cubic-bezier(.2,.8,.2,1);
+  /* 陰影與遮罩 */
+  --shade-1:rgba(0,0,0,.07); --shade-2:rgba(0,0,0,.18); --shade-3:rgba(0,0,0,.25); --shade-4:rgba(0,0,0,.35);
+  --scrim:rgba(0,0,0,.5);
 }
 html[data-theme="dark"]{
   color-scheme:dark;
@@ -35,21 +45,23 @@ html[data-theme="dark"]{
   --seg-bg:#1c1c1e; --seg-on:#3a3a3d;
   --sheet:#111113; --card:#1c1c1e; --input:#232326; --tip:#2c2c2e;
   --good:#30d158; --warn:#ffd60a; --bad:#ff453a; --up:#ff6961; --down:#4cd964;
-  --shadow:0 30px 80px rgba(0,0,0,.6);
+  --shadow:none; --frame-line:var(--line);
 }
 html[data-theme="light"]{
   color-scheme:light;
   --desk:#e9e9ee; --app:#f5f5f7; --row-hi:#e6e6eb; --under:#dedee4;
-  --text:#111113; --text2:#6e6e73; --text3:#b9b9bf; --line:rgba(0,0,0,.08);
+  --text:#111113; --text2:#5e5e63; --text3:#b9b9bf; --line:rgba(0,0,0,.08);
   --key:#ffffff; --key-hi:#ececf0; --key-press:#d4d4da;
-  --accent:#e07800; --accent-text:#b45f00; --accent-soft:rgba(224,120,0,.13); --on-accent:#fff;
+  --accent:#e07800; --accent-text:#b45f00; --accent-soft:rgba(224,120,0,.13); --on-accent:#1a1000;
   --seg-bg:#e3e3e8; --seg-on:#ffffff;
   --sheet:#f5f5f7; --card:#ffffff; --input:#e6e6eb; --tip:#ffffff;
   --good:#1a9e4b; --warn:#c98a00; --bad:#d92d20; --up:#d92d20; --down:#16a34a;
-  --shadow:0 30px 80px rgba(0,0,0,.18);
+  --shadow:0 30px 80px var(--shade-2); --frame-line:transparent;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;background:var(--app);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+::selection{background:var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+html,body{height:100%;overflow:clip;background:var(--app);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 body{display:flex;justify-content:center}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 svg{display:block}
@@ -61,13 +73,13 @@ svg{display:block}
 @media (min-width:760px) and (min-height:680px){
   html,body{background:var(--desk)}
   body{align-items:center;padding:24px}
-  #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;margin:0;max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
+  #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;margin:0;max-width:440px;height:min(960px,calc(100dvh - 48px));border-radius:30px;border:1px solid var(--frame-line);box-shadow:var(--shadow);overflow:hidden;padding-top:0}
 }
 
 .topbar{display:flex;align-items:center;gap:8px;padding:8px 12px 4px 14px}
 .seg{display:flex;flex:1;background:var(--seg-bg);border-radius:11px;padding:3px;gap:2px}
 .seg button{flex:1;height:32px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:background .2s,color .2s;white-space:nowrap}
-.seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--text);box-shadow:0 1px 3px var(--shade-2)}
 .seg button:disabled{opacity:.35;cursor:not-allowed}
 .seg.small{border-radius:9px;padding:2px}
 .seg.small button{height:26px;font-size:12.5px;border-radius:7px}
@@ -106,7 +118,7 @@ html[data-density="compact"]{--row-h:56px}
   transition:transform .3s var(--ease),background .18s;touch-action:pan-y;will-change:transform}
 .row.active .row-fg{background:var(--row-hi)}
 .row.dragging .row-fg{transition:background .18s}
-.row:not(.active):focus-visible .row-fg{box-shadow:inset 0 0 0 2px var(--accent)}
+.row:focus-visible .row-fg{box-shadow:inset 0 0 0 2px var(--accent)}
 .flag{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;background:var(--key);box-shadow:inset 0 0 0 1px var(--line);display:grid;place-items:center}
 .flag img{width:100%;height:100%;object-fit:cover;display:block}
 .flag-fb{font-style:normal;font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.02em}
@@ -128,7 +140,7 @@ html[data-density="compact"]{--row-h:56px}
 .row.calc .expr{display:flex}
 .row.calc .nm{display:none}
 .row.calc .amt .caret{display:none!important}
-.tag{font-size:10.5px;line-height:1;padding:3px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);flex:none}
+.tag{font-size:11.5px;line-height:1;padding:3px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);flex:none}
 .acts{display:none}
 @media (hover:hover) and (pointer:fine){
   .acts{display:flex;gap:2px;opacity:0;transition:opacity .15s;flex:none}
@@ -159,7 +171,7 @@ html[data-density="compact"]{--row-h:56px}
 html.ios-gap .keypad{padding-bottom:10px}
 .key{height:clamp(40px,5.7dvh,56px);border-radius:14px;background:var(--key);font-family:var(--num);font-size:26px;font-weight:400;display:grid;place-items:center;
   transition:background .12s,transform .08s;touch-action:manipulation}
-html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
+html[data-theme="light"] .key{box-shadow:0 1px 0 var(--shade-1)}
 .key.op{color:var(--accent-text);background:var(--key-hi);font-size:28px}
 .key.pressed{background:var(--key-press);transform:scale(.965)}
 .key svg{width:26px;height:26px}
@@ -180,11 +192,11 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 
 /* ---------- 首次使用提示 ---------- */
 .coach{position:absolute;left:12px;right:12px;z-index:70;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:16px;
-  background:var(--accent);color:var(--on-accent);box-shadow:0 12px 36px rgba(0,0,0,.35);font-size:13px;line-height:1.55;animation:coachIn .35s var(--ease)}
+  background:var(--accent);color:var(--on-accent);box-shadow:0 12px 36px var(--shade-4);font-size:13px;line-height:1.55;animation:coachIn .35s var(--ease)}
 .coach::before{content:"";position:absolute;top:-6px;left:50%;width:12px;height:12px;margin-left:-6px;background:var(--accent);transform:rotate(45deg);border-radius:2px}
 .coach-txt{flex:1;min-width:0}
 .coach-txt b{display:block;font-size:14px;margin-bottom:1px}
-.coach-ok{flex:none;height:32px;padding:0 14px;border-radius:10px;background:rgba(0,0,0,.18);color:inherit;font-weight:600;font-size:13px}
+.coach-ok{flex:none;height:32px;padding:0 14px;border-radius:10px;background:var(--shade-2);color:inherit;font-weight:600;font-size:13px}
 @keyframes coachIn{from{opacity:0;transform:translateY(8px)}}
 
 /* ---------- 使用說明 ---------- */
@@ -193,9 +205,9 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .help ul{padding-left:18px;color:var(--text2)}
 .help li{margin:4px 0}
 .help li b{color:var(--text);font-weight:600}
-.h-demo{background:var(--card);border-radius:14px;padding:10px;overflow:hidden}
+.h-demo{border-radius:10px;overflow:hidden}
 .h-row{position:relative;height:52px;border-radius:10px;overflow:hidden;background:var(--under);display:flex;justify-content:space-between;align-items:center;padding:0 14px;font-size:12px;color:var(--text2)}
-.h-fg{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--row-hi);animation:hdemo 4s var(--ease) infinite}
+.h-fg{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--row-hi);animation:hdemo 4s var(--ease) .4s 1 both}
 .h-fg i{width:26px;height:26px;border-radius:50%;background:var(--accent-soft)}
 .h-fg b{font-size:15px;color:var(--text)}
 .h-fg em{margin-left:auto;font-style:normal;font-family:var(--num);font-size:20px;color:var(--text)}
@@ -206,7 +218,7 @@ html[data-theme="light"] .key{box-shadow:0 1px 0 rgba(0,0,0,.07)}
 .h-keys td{padding:4px 12px 4px 0}
 kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--key-hi);border:1px solid var(--line);color:var(--text)}
 .h-foot{margin-top:18px;font-size:12px;color:var(--text2)}
-.diag{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--card);font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--text);white-space:pre-wrap;user-select:text;-webkit-user-select:text}
+.diag{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--card);font:12px/1.6 var(--mono);color:var(--text);white-space:pre-wrap;user-select:text;-webkit-user-select:text}
 #safeProbe{position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .h-note{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
@@ -214,14 +226,14 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 
 /* ---------- Toast ---------- */
 #toast{position:absolute;left:50%;bottom:calc(46% + 10px);transform:translate(-50%,8px);background:var(--tip);color:var(--text);padding:9px 14px;border-radius:12px;font-size:13px;
-  box-shadow:0 8px 30px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;max-width:86%;text-align:center}
+  box-shadow:0 8px 30px var(--shade-3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;max-width:86%;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* ---------- Sheets ---------- */
 .sheet-wrap{position:fixed;inset:0;z-index:60}
-.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .28s}
+.backdrop{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity .28s}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-height:90dvh;background:var(--sheet);border-radius:22px 22px 0 0;transform:translateY(100%);
-  transition:transform .32s var(--ease);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+  transition:transform .32s var(--ease);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px var(--shade-3)}
 .sheet-wrap.open .backdrop{opacity:1}
 .sheet-wrap.open .sheet{transform:none}
 .grab{width:38px;height:5px;border-radius:3px;background:var(--text3);margin:8px auto 2px;flex:none}
@@ -239,7 +251,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 /* Picker */
 .search{display:flex;align-items:center;gap:8px;margin:0 14px 8px;padding:0 12px;height:40px;border-radius:12px;background:var(--input);flex:none}
 .search svg{width:18px;height:18px;color:var(--text2);flex:none}
-.search input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--text);font:inherit;font-size:16px;user-select:text;-webkit-user-select:text}
+.search input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--text);caret-color:var(--accent);font:inherit;font-size:16px;user-select:text;-webkit-user-select:text}
 .pk-sec{font-size:12px;color:var(--text2);padding:12px 18px 6px;font-weight:500}
 .pk-item{width:100%;display:flex;align-items:center;gap:12px;padding:9px 18px;text-align:left}
 .pk-item:hover,.pk-item.kb{background:var(--row-hi)}
@@ -287,37 +299,55 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 .bt-foot b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
 .hint{font-size:11.5px;color:var(--text2);margin-top:8px;line-height:1.55}
 .ctrl{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.ctrl .seg{flex:1 1 auto;min-width:140px}
+.ctrl .seg{flex:1 1 auto;min-width:160px}
 .card .seg{background:var(--app)}
 .chart{position:relative;height:210px;touch-action:pan-y}
 .chart svg{width:100%;height:100%;overflow:visible}
-.chart .ax{font-size:10.5px;fill:var(--text2);font-family:var(--num)}
+.chart .ax{font-size:11px;fill:var(--text2);font-family:var(--num)}
 .chart .mk{font-size:11px;font-weight:600;fill:var(--text);font-family:var(--num)}
 .chart .grid{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
 .chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .chart .cross{stroke:var(--text2);stroke-width:1}
 .tip{position:absolute;top:0;pointer-events:none;background:var(--tip);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px;white-space:nowrap;
-  box-shadow:0 6px 20px rgba(0,0,0,.25);transform:translateX(-50%)}
+  box-shadow:0 6px 20px var(--shade-3);transform:translateX(-50%)}
 .tip b{font-family:var(--num);font-size:14px;font-weight:600;display:block}
 .tip span{color:var(--text2)}
 .chart-msg{height:100%;display:grid;place-items:center;text-align:center;color:var(--text2);font-size:13px;gap:8px;align-content:center}
 .skel{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--key) 0,var(--key-hi) 50%,var(--key) 100%);background-size:200% 100%;animation:sh 1.2s linear infinite}
 @keyframes sh{to{background-position:-200% 0}}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
-.stats div{background:var(--app);border-radius:11px;padding:8px 6px;text-align:center;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:12px}
+.stats div{border-left:1px solid var(--line);padding:4px 6px;text-align:center;min-width:0}
 .stats span{display:block;font-size:11px;color:var(--text2)}
 .stats b{display:block;font-family:var(--num);font-size:14px;font-weight:600;margin:2px 0;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
-.stats em{display:block;font-style:normal;font-size:10.5px;color:var(--text2)}
+.stats em{display:block;font-style:normal;font-size:11px;color:var(--text2)}
 .up{color:var(--up)} .down{color:var(--down)}
 .gauge{margin-top:14px}
 .gauge-bar{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--down),var(--key-press) 50%,var(--up));opacity:.9}
-.gauge-bar i{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--text);border:3px solid var(--card);transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.gauge-bar i{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--text);border:3px solid var(--card);transform:translate(-50%,-50%);box-shadow:0 1px 4px var(--shade-4)}
 .gauge-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-top:6px}
 .verdict{font-size:13px;line-height:1.65;margin-top:10px}
 .verdict b{color:var(--accent-text);font-weight:600}
 .src-note{font-size:11px;color:var(--text2);margin-top:10px;line-height:1.5}
 .retry{margin-top:4px;padding:6px 14px;border-radius:9px;background:var(--key-hi);font-size:13px}
 .d-pad{height:10px}
+/* ---------- 按下、觸控範圍、減少動態 ---------- */
+.stats div:first-child{border-left:0}
+.sheet:focus{outline:none}
+.d-title span i{font-style:normal;margin-left:8px}
+.icon-btn:active,.act:active,#bankToggle:active,.link-btn:active,.h-play:active,.retry:active,.coach-ok:active{background:var(--key-press)}
+.seg button:not(:disabled):active,.chip:active,#eqPill:active{transform:scale(.96)}
+.bank-grid a:active,.pk-item:active{background:var(--key-press)}
+.row:active .row-fg{background:var(--row-hi)}
+/* 小於 44px 的觸控元件：外擴點擊範圍，不改變外觀 */
+#refreshBtn,#eqPill,.chip,.seg.small button{position:relative}
+#refreshBtn::after,#eqPill::after,.chip::after{content:"";position:absolute;inset:-8px -4px}
+.seg.small button::after{content:"";position:absolute;inset:-5px 0}
+@media (prefers-reduced-motion: reduce){
+  .seg button,.row-fg::before,.row-fg::after,.row-under,.row-under span,.row-fg,.acts,.key,#bankToggle svg,#toast,.backdrop,.sheet{transition-duration:.01ms}
+  .row.peek-r .row-fg,.row.peek-l .row-fg,.caret,.dot.loading,#refreshBtn.spin svg,.coach,.h-fg,.skel{animation:none}
+  .key.pressed,.seg button:active,.chip:active,#eqPill:active{transform:none}
+  #refreshBtn.spin svg{opacity:.45}
+}
 </style>
 </head>
 <body>
@@ -371,7 +401,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 <!-- 幣別選擇 -->
 <div class="sheet-wrap" id="pickerWrap" hidden>
   <div class="backdrop" data-close></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+  <div class="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
     <div class="grab"></div>
     <div class="sheet-h"><h2 id="pkTitle">更換幣別</h2><button class="icon-btn" data-close aria-label="關閉"></button></div>
     <label class="search"><span id="pkIcon"></span><input id="pkSearch" type="search" placeholder="搜尋：日元、JPY、澳幣、AUD…" autocomplete="off" enterkeyhint="go"></label>
@@ -382,7 +412,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 <!-- 匯率詳情 -->
 <div class="sheet-wrap" id="detailWrap" hidden>
   <div class="backdrop" data-close></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <div class="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <div class="grab"></div>
     <div class="d-head" id="dHead"></div>
     <div class="sheet-body" id="dBody"></div>
@@ -392,7 +422,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
 <!-- 使用說明 -->
 <div class="sheet-wrap" id="helpWrap" hidden>
   <div class="backdrop" data-close></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hTitle">
+  <div class="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="hTitle">
     <div class="grab"></div>
     <div class="sheet-h"><h2 id="hTitle">使用說明</h2><button class="icon-btn" data-close aria-label="關閉"></button></div>
     <div class="sheet-body help">
@@ -419,7 +449,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
       <ul>
         <li><b>向右滑</b>：更換這一列的幣別（可搜尋中文、英文或代碼，例如「日元」、JPY）。選到已在列表中的幣別會自動互換位置。</li>
         <li><b>向左滑</b>：查看匯率明細（臺銀現金／即期買賣價、與中間價差距）與近 7／30／90 天走勢圖。</li>
-        <li>電腦版：用滑鼠拖曳該列、點列上的 ⇄ 與 📈 按鈕，或在詳情上按右鍵。</li>
+        <li>電腦版：用滑鼠拖曳該列、點列上的「更換幣別」與「匯率詳情」按鈕，或在詳情上按右鍵。</li>
       </ul>
 
       <h3>資料來源</h3>
@@ -444,7 +474,7 @@ kbd{font-family:var(--num);font-size:11.5px;padding:2px 6px;border-radius:5px;ba
   </div>
 </div>
 
-<noscript><p style="padding:24px;color:#888">此網站需要啟用 JavaScript。</p></noscript>
+<noscript><p style="padding:24px">此網站需要啟用 JavaScript。</p></noscript>
 
 <script>
 'use strict';
@@ -811,6 +841,8 @@ function focusRow(i){
 let suppressClick=0;
 function attachRow(row){
   const fg=$('.row-fg',row); let st=null;
+  /* 用鍵盤（Tab）移到這一列時，把它設為輸入列；滑鼠或觸控點到時由原本的點擊處理 */
+  row.addEventListener('focus',()=>{ if(!quietFocus && row.matches(':focus-visible')) focusRow(+row.dataset.i); });
   const reset=()=>{ row.classList.remove('dragging','armed'); fg.style.transform=''; setTimeout(()=>row.classList.remove('dir-left','dir-right'),300); };
   fg.addEventListener('pointerdown',e=>{
     if(e.button>0||e.target.closest('.act')) return;
@@ -861,20 +893,20 @@ function updateStatus(){
     const m=S.mid;
     // 資料時間：有精確時間就顯示時間；只有日期的來源標示「每日價」
     const dataT = m.updatedAt ? `${fmtShort(m.updatedAt)} 報價` : `${md(m.date)} 每日價`;
-    const syncT = m.fetchedAt ? ` · ${fmtShort(m.fetchedAt)} 同步` : '';
+    const syncT = m.fetchedAt ? `，${fmtShort(m.fetchedAt)} 同步` : '';
     title=`來源：${m.via||''}\n資料時間：${m.updatedAt?fmtFull(m.updatedAt):m.date+'（此來源每日更新一次，只提供日期）'}${m.fetchedAt?`\n最後同步：${fmtFull(m.fetchedAt)}`:''}`;
     if(m.origin==='builtin'){ cls=S.midStatus==='loading'?'loading':'error'; text= S.midStatus==='loading'?'國際中間價 · 連線中…':`無法連線 · 內建參考匯率（${md(m.date)}）`; }
     else if(S.midStatus==='stale'){ cls='stale'; text=`離線 · 國際中間價 ${dataT}${syncT}`; }
     else { cls=S.midStatus==='loading'?'loading':'ok'; text=`國際中間價 · ${dataT}${syncT}`; }
   }else{
     const b=S.bot, tp=BOT_TYPES[S.botType];
-    if(!b){ cls=S.botStatus==='loading'?'loading':'error'; text= S.botStatus==='loading'?'臺灣銀行牌告 · 載入中…':'臺銀牌告暫時無法取得 · 暫以國際中間價計算'; }
+    if(!b){ cls=S.botStatus==='loading'?'loading':'error'; text= S.botStatus==='loading'?'臺灣銀行牌告 · 載入中…':'臺銀牌告暫時無法取得，暫以國際中間價計算'; }
     else{
       const listT = b.updated ? `掛牌 ${fmtShort(b.updated)}` : '';
       const syncT = b.fetchedAt ? `${fmtShort(b.fetchedAt)} 同步` : '';
-      const when = [listT,syncT].filter(Boolean).join(' · ');
+      const when = [listT,syncT].filter(Boolean).join('，');
       title=`來源：${b.via||'臺灣銀行'}${b.updated?`\n臺銀掛牌時間：${fmtFull(b.updated)}`:''}${b.fetchedAt?`\n最後同步：${fmtFull(b.fetchedAt)}`:''}`;
-      if(S.botStatus==='stale'){ cls='stale'; text=`離線 · 臺銀${tp} · ${when}`; }
+      if(S.botStatus==='stale'){ cls='stale'; text=`離線 · 臺銀${tp} ${when}`; }
       else { cls=S.botStatus==='loading'?'loading':'ok'; text=`臺銀${tp} · ${when}`; }
     }
   }
@@ -1086,12 +1118,25 @@ async function getBotSeries(code,days,type){
  *  底部面板（Sheet）
  * ============================================================ */
 const isOpen=id=>{ const w=document.getElementById(id); return w && !w.hidden && w.classList.contains('open'); };
+/* 開啟面板時：焦點移進面板、背景設為 inert；關閉時把焦點還給原本的元素 */
+let sheetReturn=null, quietFocus=false, viaKeys=false;
+addEventListener('keydown',()=>{ viaKeys=true; },true);
+addEventListener('pointerdown',()=>{ viaKeys=false; },true);
 function openSheet(id){
-  const w=document.getElementById(id); clearTimeout(w._t); w.hidden=false;
+  const w=document.getElementById(id); clearTimeout(w._t);
+  if(!$('.sheet-wrap.open')) sheetReturn=document.activeElement;
+  w.hidden=false; $('#app').inert=true;
+  // 鍵盤開啟：焦點到關閉鈕（顯示焦點框）；觸控開啟：焦點到面板本身（不顯示框）
+  const f=viaKeys ? $('.sheet button[data-close]',w) : $('.sheet',w); if(f) f.focus({preventScroll:true});
   requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('open')));
 }
 function closeSheet(id){
   const w=document.getElementById(id); w.classList.remove('open');
+  if(!$('.sheet-wrap.open')){
+    $('#app').inert=false;
+    const r=sheetReturn; sheetReturn=null;
+    if(r && r.isConnected && r!==document.body){ quietFocus=true; r.focus({preventScroll:true}); quietFocus=false; }
+  }
   clearTimeout(w._t); w._t=setTimeout(()=>{ if(!w.classList.contains('open')) w.hidden=true; },330);
 }
 $$('.sheet-wrap').forEach(w=>w.addEventListener('click',e=>{ if(e.target.closest('[data-close]')) closeSheet(w.id); }));
@@ -1100,7 +1145,7 @@ $$('.sheet-wrap').forEach(w=>w.addEventListener('click',e=>{ if(e.target.closest
 let pkRow=0, pkKb=0;
 function openPicker(i){
   pkRow=i; pkKb=0;
-  $('#pkTitle').textContent=`更換第 ${i+1} 列 · 目前 ${S.rows[i]}`;
+  $('#pkTitle').textContent=`更換第 ${i+1} 列（目前 ${S.rows[i]}）`;
   $('#pkSearch').value=''; renderPicker(); openSheet('pickerWrap');
   $('#pkList').scrollTop=0;
   if(matchMedia('(hover:hover) and (pointer:fine)').matches) setTimeout(()=>$('#pkSearch').focus(),60);
@@ -1108,7 +1153,7 @@ function openPicker(i){
 function pkItem(c){
   const j=S.rows.indexOf(c.code);
   const right = j===pkRow ? `<span class="pk-check">${ICON.check}</span>`
-              : j>=0 ? `<span class="badge">第 ${j+1} 列 · 互換</span>` : '';
+              : j>=0 ? `<span class="badge">與第 ${j+1} 列互換</span>` : '';
   return `<button class="pk-item" data-code="${c.code}"><span class="flag">${flagHTML(c)}</span><span class="pk-code">${c.code}</span>
     <span class="pk-name">${c.zh} ${c.sym}<small>${c.en}</small></span>${BOT_CODES.has(c.code)?'<span class="badge acc">臺銀</span>':''}${right}</button>`;
 }
@@ -1155,7 +1200,7 @@ function openDetail(code){
   D.code=code; D.base=defaultBase(code);
   D.series = S.source==='bot'&&botSeriesOK() ? 'bot' : 'mid';
   const c=CUR_MAP[code];
-  $('#dHead').innerHTML=`<span class="flag">${flagHTML(c)}</span><div class="d-title"><b id="dTitle">${code}</b><span>${c.zh} ${c.sym} · ${c.en}</span></div><button class="icon-btn" data-close aria-label="關閉">${ICON.close}</button>`;
+  $('#dHead').innerHTML=`<span class="flag">${flagHTML(c)}</span><div class="d-title"><b id="dTitle">${code}</b><span>${c.zh} ${c.sym}<i>${c.en}</i></span></div><button class="icon-btn" data-close aria-label="關閉">${ICON.close}</button>`;
   $('#dBody').innerHTML=`<div id="dInfo"></div>
     <div class="card"><div class="card-h"><span>近期匯率走勢</span><small id="dSrc"></small></div>
       <div class="ctrl">
@@ -1181,11 +1226,11 @@ function renderDetailInfo(){
   const box=$('#dInfo'); if(!box) return;
   const x=D.code, b=D.base, v=rateInfo(x).v/rateInfo(b).v, vm=midTWD(x)/midTWD(b);
   const lbl=S.source==='bot'?`臺灣銀行 ${BOT_TYPES[S.botType]}`:'國際市場中間價';
-  const diff= S.source==='bot'&&isFinite(vm)&&Math.abs(v/vm-1)>1e-9 ? ` · 與中間價差 ${pct(v/vm-1)}` : '';
+  const diff= S.source==='bot'&&isFinite(vm)&&Math.abs(v/vm-1)>1e-9 ? `，與中間價差 ${pct(v/vm-1)}` : '';
   const bases=[...new Set([...S.rows,'TWD','USD'])].filter(c=>c!==x);
   box.innerHTML=`
     <div class="d-quote"><div class="q-main">1 ${x} =<b>${fmtRate(v)}</b>${b}</div>
-      <div class="q-sub">1 ${b} = ${fmtRate(1/v)} ${x} · ${lbl}${diff}</div></div>
+      <div class="q-sub">1 ${b} = ${fmtRate(1/v)} ${x}<br>${lbl}${diff}</div></div>
     <div class="chips" id="dBases"><span class="lbl">換算對象</span>${bases.map(c=>`<button class="chip" data-b="${c}" aria-pressed="${c===b}">${c}</button>`).join('')}</div>
     ${botCardHTML(x)}`;
 }
@@ -1340,11 +1385,13 @@ $('[data-k="back"]').innerHTML=ICON.back;
     const b=e.target.closest('.key'); if(!b) return;
     e.preventDefault(); b.classList.add('pressed');
     const k=b.dataset.k; press(k);
-    if(k==='back'){ clearTimeout(lpT); lpT=setTimeout(()=>{ press('clear'); haptic(); toast('已清除',1000); },550); }
+    if(k==='back'){ clearTimeout(lpT); lpT=setTimeout(()=>{ press('clear'); haptic(); },550); }
   });
   const up=e=>{ clearTimeout(lpT); $$('.key.pressed').forEach(b=>b.classList.remove('pressed')); };
   kp.addEventListener('pointerup',up); kp.addEventListener('pointerleave',up); kp.addEventListener('pointercancel',up);
   kp.addEventListener('contextmenu',e=>e.preventDefault());
+  /* 鍵盤或螢幕閱讀器啟動按鍵（Enter／空白鍵，沒有 pointerdown） */
+  kp.addEventListener('click',e=>{ if(e.detail!==0) return; const b=e.target.closest('.key'); if(!b) return; press(b.dataset.k); flashKey(b.dataset.k); });
 })();
 function flashKey(k){ const b=$(`.key[data-k="${k==='clear'?'back':k}"]`); if(!b) return; b.classList.add('pressed'); setTimeout(()=>b.classList.remove('pressed'),110); }
 $('#eqPill').addEventListener('click',()=>press('='));
@@ -1353,11 +1400,17 @@ document.addEventListener('keydown',e=>{
   const open=$('.sheet-wrap.open');
   if(e.key==='Escape'){ if(open) closeSheet(open.id); else if(S.expr){ press('clear'); flashKey('clear'); } e.preventDefault(); return; }
   if(open || e.target.matches('input,textarea')) return;
+  /* 焦點在按鈕或連結上時，Enter／空白鍵交給該元素本身 */
+  if((e.key==='Enter'||e.key===' ') && e.target.closest('button,a[href]')) return;
   const map={'*':'*','x':'*','X':'*','×':'*','/':'/','÷':'/','+':'+','-':'-',',':'.','.':'.','Enter':'=','=':'=','Backspace':'back','Delete':'clear'};
   const k=/^\d$/.test(e.key)?e.key:map[e.key];
   if(k){ e.preventDefault(); press(k); flashKey(k); return; }
   const n=S.rows.length;
-  if(e.key==='ArrowDown'||e.key==='ArrowUp'||e.key==='Tab'){ e.preventDefault(); focusRow((S.active+((e.key==='ArrowUp'||(e.key==='Tab'&&e.shiftKey))?-1:1)+n)%n); return; }
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault(); const i=(S.active+(e.key==='ArrowUp'?-1:1)+n)%n; focusRow(i);
+    if(e.target.closest('.row')) $$('.row')[i].focus();
+    return;
+  }
   if(e.key==='ArrowRight'){ e.preventDefault(); openPicker(S.active); return; }
   if(e.key==='ArrowLeft'){ e.preventDefault(); openDetail(S.rows[S.active]); return; }
 });
@@ -1381,14 +1434,14 @@ $('#pkIcon').outerHTML=ICON.search;
 $$('.sheet-h [data-close]').forEach(b=>b.innerHTML=ICON.close);
 $('#refreshBtn').addEventListener('click',async()=>{
   setSpin(true);
-  const ok=await Promise.all([loadMid(),loadBot({live:S.source==='bot'})]).then(r=>r[0]!==false).catch(()=>false);
-  updateStatus();
-  if(ok) toast(`匯率已更新 · ${hhmm(Date.now())}`,1600);
+  await Promise.all([loadMid(),loadBot({live:S.source==='bot'})]).catch(()=>{});
+  updateStatus();   // 成功時狀態列的同步時間就是回饋，不另跳提示
 });
 
 /* 同步按鈕旋轉：至少轉完整一圈，載入結束後在該圈轉完時才停，避免瞬間跳回 */
 var spinWant=false;
-function setSpin(on){ spinWant=on; if(on) $('#refreshBtn').classList.add('spin'); }
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+function setSpin(on){ spinWant=on; if(on) $('#refreshBtn').classList.add('spin'); else if(RM.matches) $('#refreshBtn').classList.remove('spin'); }
 $('#refreshBtn').addEventListener('animationiteration',()=>{ if(!spinWant) $('#refreshBtn').classList.remove('spin'); });
 
 /* ---------- 使用說明與首次提示 ---------- */
