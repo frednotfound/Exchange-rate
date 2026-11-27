@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://flagcdn.com">
 <script>
   /* 先套用主題，避免閃爍 */
-  (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;document.documentElement.dataset.density=JSON.parse(localStorage.getItem('fx.density')||'"roomy"');}catch(e){}})();
+  (function(){try{var t=JSON.parse(localStorage.getItem('fx.theme')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=t==='dark'?'#000000':'#f5f5f7';m.removeAttribute('media');});document.documentElement.dataset.density=JSON.parse(localStorage.getItem('fx.density')||'"roomy"');}catch(e){}})();
 </script>
 <style>
 /* Hallmark · checked: 2026-11-27 · genre: modern-minimal (inferred) · shape: app screen
